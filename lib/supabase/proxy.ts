@@ -4,17 +4,6 @@ import { supabaseConfig } from "@/lib/supabase/config";
 import { PREVIEW_COOKIE, publicDemoEnabled } from "@/lib/preview";
 
 export async function refreshSession(request: NextRequest) {
-  if (publicDemoEnabled()) {
-    const response = NextResponse.next({ request });
-    response.cookies.set(PREVIEW_COOKIE, "1", {
-      httpOnly: false,
-      sameSite: "lax",
-      secure: true,
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
-    return response;
-  }
   if (process.env.NODE_ENV === "development" && request.cookies.get(PREVIEW_COOKIE)?.value === "1") return NextResponse.next({request});
   let response = NextResponse.next({ request });
   const { url, key } = supabaseConfig();
@@ -30,7 +19,7 @@ export async function refreshSession(request: NextRequest) {
   });
   const { data: { user } } = await supabase.auth.getUser();
   const publicPath = request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/forgot-password" || request.nextUrl.pathname.startsWith("/auth/");
-  if (!user && !publicPath) return NextResponse.redirect(new URL("/login", request.url));
+  if (!user && !publicDemoEnabled() && !publicPath) return NextResponse.redirect(new URL("/login", request.url));
   if (user && request.nextUrl.pathname === "/login") return NextResponse.redirect(new URL("/", request.url));
   return response;
 }

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, BarChart3, BriefcaseBusiness, Building2, CalendarClock, ContactRound, FileText, Gauge, Home, Library, ListChecks, Search, Settings, Sparkles } from "lucide-react";
 import { AuthInviteBridge } from "@/components/auth-invite-bridge";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const primaryLinks = [
   ["Home", "/", Home], ["Find jobs", "/jobs/discover", Search], ["Review jobs", "/jobs", BriefcaseBusiness],
@@ -20,7 +22,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const connected=Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
-  const publicDemo=process.env.NEXT_PUBLIC_APPLYIQ_PUBLIC_DEMO==="true";
+  const [authenticated,setAuthenticated]=useState(false);
+  useEffect(()=>{if(!connected)return;const supabase=createSupabaseBrowserClient();supabase.auth.getSession().then(({data})=>setAuthenticated(Boolean(data.session)));const {data}=supabase.auth.onAuthStateChange((_event,session)=>setAuthenticated(Boolean(session)));return()=>data.subscription.unsubscribe();},[connected]);
+  const publicDemo=process.env.NEXT_PUBLIC_APPLYIQ_PUBLIC_DEMO==="true"&&!authenticated;
   const currentSection = links.find(([, href]) => linkIsActive(path,href))?.[1] ?? "/";
   if (path === "/login" || path === "/forgot-password" || path.startsWith("/auth/update-password")) return children;
   return <><AuthInviteBridge/><div className="shell">
