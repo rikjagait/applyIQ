@@ -9,6 +9,7 @@ import { jobIntakeSchema } from "@/lib/validation";
 import { buildApplicationStudio } from "@/lib/application-studio";
 import { jobs } from "@/lib/data";
 import { prioritizeDiscoveredJobs } from "@/lib/job-discovery/prioritize";
+import { parseCompanyDirectory, rankCompanyMatches } from "@/lib/job-discovery/stapply";
 
 describe("match scoring", () => {
   it("applies weights and clamps inputs", () => expect(calculateMatchScore({ relevantExperience: 1, transferableExperience: .5, location: 2 })).toBe(41));
@@ -29,6 +30,7 @@ describe("factual integrity", () => {
 });
 describe("application studio",()=>{it("maps each tailored claim to its exact source evidence",()=>{const studio=buildApplicationStudio(jobs[0]);expect(studio.changes[3].original).toContain("team of three");expect(studio.changes.every(change=>change.integrity!=="RED")).toBe(true);expect(studio.coverLetter).toContain("Northstar Health");});});
 describe("discovery prioritization",()=>{it("keeps relevant target-market roles ahead of unrelated technical jobs",()=>{const found=prioritizeDiscoveredJobs([{externalId:"1",title:"Learning Program Manager",company:"A",location:"New York City",postedAt:null,jobUrl:"https://example.com/1",provider:"Ashby"},{externalId:"2",title:"Software Engineer",company:"A",location:"San Francisco",postedAt:null,jobUrl:"https://example.com/2",provider:"Ashby"}]);expect(found.map(job=>job.externalId)).toEqual(["1"])});});
+describe("Stapply company directory",()=>{it("parses quoted company names and ranks exact matches first",()=>{const entries=parseCompanyDirectory('ats,name,slug,url\nashby,"Example, Inc.",example,https://jobs.ashbyhq.com/example\nlever,Example Labs,example-labs,https://jobs.lever.co/example-labs');expect(entries[0].name).toBe("Example, Inc.");expect(rankCompanyMatches(entries,"Example")[0].slug).toBe("example");});});
 describe("job analysis", () => {
   it("extracts requirements and produces explainable bounded scoring", () => {
     const result = analyzeDeterministically({ title:"Learning Program Manager", company:"Example Co", location:"New York, NY", description:"We require experience designing learning programs and managing stakeholder relationships. The manager will own project timelines, training workshops, analytics and impact reporting. Hybrid in New York. Full-time. Salary $95,000–$110,000 per year. Candidates must communicate across teams and improve program outcomes." });

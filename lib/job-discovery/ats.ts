@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { findCompaniesInStapply } from "@/lib/job-discovery/stapply";
 
 export type DiscoveredJob = {
   externalId: string;
@@ -47,6 +48,16 @@ function companySlugs(name:string){
 }
 
 export async function discoverAtsJobsByCompanyName(companyName:string){
+  try {
+    const directory = await findCompaniesInStapply(companyName);
+    const supported = directory.matches.filter(match => ["greenhouse", "lever", "ashby"].includes(match.ats.toLowerCase()));
+    for (const company of supported) {
+      try {
+        const jobs = await discoverAtsJobs(company.url);
+        if (jobs.length) return { jobs: jobs.map(job => ({ ...job, company: company.name })), boardUrl: company.url, directoryUpdatedAt: directory.updatedAt, source: "Stapply open jobs directory" };
+      } catch { /* Try the next exact directory match. */ }
+    }
+  } catch { /* Fall back to direct ATS slug detection when the directory is unavailable. */ }
   const candidates=companySlugs(companyName).flatMap(slug=>[
     `https://job-boards.greenhouse.io/${slug}`,
     `https://jobs.lever.co/${slug}`,
@@ -54,5 +65,5 @@ export async function discoverAtsJobsByCompanyName(companyName:string){
   ]);
   const attempts=await Promise.all(candidates.map(async boardUrl=>{try{const jobs=await discoverAtsJobs(boardUrl);return jobs.length?{jobs,boardUrl}:null}catch{return null}}));
   const match=attempts.find(Boolean);if(!match)throw new Error("ApplyIQ could not automatically locate a supported careers board for that company. Open ‘Advanced’ and paste its careers URL instead.");
-  return match;
+  return { ...match, directoryUpdatedAt: null, source: "Direct ATS lookup" };
 }
