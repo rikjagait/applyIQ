@@ -1,5 +1,14 @@
 # ApplyIQ
 
+## August 2026 update
+
+- Public demo and authenticated private workspace now coexist safely.
+- Daily welcome uses the visitor's local time and rotates encouragement each day.
+- Discovery reads fuller ATS data, deduplicates cross-listed roles, and supports Greenhouse, Lever, Ashby, SmartRecruiters, and Workday.
+- Settings include explicit role and industry exclusions; Today presents a focused apply/review/filter brief.
+- Outreach ranks likely hiring contacts and opens narrow LinkedIn people searches without storing credentials or automating messages.
+- A protected Vercel cron route is available for daily watchlist refreshes once `CRON_SECRET` and the server-only `SUPABASE_SERVICE_ROLE_KEY` are configured.
+
 Private, desktop-first job-search copilot for Neelam Jagait. The application runs immediately in **Demo mode**, using fictional job data and verified résumé facts. Supabase and OpenAI integrations are opt-in via environment variables.
 
 The primary intake workflow accepts a public HTTPS job-posting URL. ApplyIQ prefers schema.org `JobPosting` data, falls back to visible page content, and offers manual recovery for sites that block automated page access. URL fetching rejects private-network destinations, validates every redirect, and enforces response time and size limits.

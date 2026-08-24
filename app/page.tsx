@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { ArrowRight, Building2, FileCheck2, Link2, MessageCircle, Search, Send } from "lucide-react";
 import { listJobs } from "@/lib/repositories/jobs";
-import { JobRow, PageHead } from "@/components/ui";
+import { JobRow } from "@/components/ui";
 import { redirect } from "next/navigation";
+import { DailyWelcome } from "@/components/daily-welcome";
 
 export default async function HomePage({searchParams}:{searchParams:Promise<{code?:string;token_hash?:string;type?:string}>}) {
   const callback=await searchParams;if(callback.code||callback.token_hash){const query=new URLSearchParams();if(callback.code)query.set("code",callback.code);if(callback.token_hash)query.set("token_hash",callback.token_hash);if(callback.type)query.set("type",callback.type);redirect(`/auth/callback?${query}`);}
   const jobs=await listJobs(); const top = jobs.filter(j => j.score >= 80).slice(0, 3); const applications=jobs.filter(j=>!["Discovered","Shortlisted"].includes(j.status));
   return <div className="content">
-    <PageHead eyebrow="Sunday, August 23" title="Good morning, Neelam" copy="Here’s where your attention will have the most impact today." />
+    <DailyWelcome />
     <nav className="workflow-path" aria-label="Job search workflow">{[["1","Find","/jobs/discover",Search],["2","Review","/jobs",FileCheck2],["3","Apply","/pipeline",Send],["4","Connect","/contacts",MessageCircle]].map(([number,label,href,Icon])=><Link href={href as string} key={label as string}><span>{number as string}</span><Icon size={16}/><strong>{label as string}</strong></Link>)}</nav>
     <section className="intake-launcher" aria-labelledby="add-opportunity-title">
       <div className="intake-launcher-copy"><span className="launcher-icon"><Link2 size={18}/></span><div><h2 id="add-opportunity-title">Add an opportunity</h2><p>Paste any public job posting and ApplyIQ will import, structure and score it.</p></div></div>

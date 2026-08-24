@@ -5,10 +5,11 @@ import { CategoryPill, PageHead } from "@/components/ui";
 import { getApplicationRecord } from "@/lib/repositories/applications";
 import { ApplicationRecord } from "@/components/application-record";
 import { JobFeedback } from "@/components/job-feedback";
+import { StartApplicationButton } from "@/components/start-application-button";
 
 export default async function JobDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; const job = await getJob(id); if (!job) notFound();const application=await getApplicationRecord(id);
-  return <div className="content"><PageHead eyebrow={`${job.company} · ${job.location}`} title={job.title} copy={`${job.arrangement} · ${job.salary ?? "Salary not listed"} · Posted ${job.postedDaysAgo} days ago`} action={<div className="actions"><button className="btn">Save</button><button className="btn primary">Start application</button></div>}/><div className="detail-grid"><div className="stack">
+  return <div className="content"><PageHead eyebrow={`${job.company} · ${job.location}`} title={job.title} copy={`${job.arrangement} · ${job.salary ?? "Salary not listed"} · Posted ${job.postedDaysAgo} days ago`} action={<div className="actions"><Link className="btn" href="/jobs">Back to jobs</Link><StartApplicationButton jobId={job.id}/></div>}/><div className="detail-grid"><div className="stack">
     <section className="card"><h2>ApplyIQ assessment</h2><p>{job.summary}</p><div className="grid two-col"><div><h3>Why you fit</h3><ul className="list">{job.strengths.map(s=><li key={s}>{s}</li>)}</ul></div><div><h3>Potential gaps</h3><ul className="list">{job.gaps.map(s=><li key={s}>{s}</li>)}</ul></div></div></section>
     <section className="card"><div className="section-head"><h2>Requirements matrix</h2><span className="subtle">Evidence from verified Career Truth</span></div><div className="table-wrap"><table><thead><tr><th>Requirement</th><th>Importance</th><th>Evidence</th><th>Strength</th><th>Gap</th></tr></thead><tbody>{job.requirements.map(r=><tr key={r.requirement}><td><strong>{r.requirement}</strong></td><td>{r.importance}</td><td>{r.evidence}</td><td>{r.strength}</td><td>{r.gap}</td></tr>)}</tbody></table></div></section>
     <section className="card"><h2>Application strategy</h2><p>Lead with national-scale program ownership, translate partnership work into senior stakeholder language, and use the 30% engagement increase as the clearest measurable outcome. Address the industry transition directly without overstating experience.</p></section>

@@ -10,6 +10,9 @@ import { buildApplicationStudio } from "@/lib/application-studio";
 import { jobs } from "@/lib/data";
 import { assessDiscoveredJob, prioritizeDiscoveredJobs } from "@/lib/job-discovery/prioritize";
 import { parseCompanyDirectory, rankCompanyMatches } from "@/lib/job-discovery/stapply";
+import { encouragementForDate, greetingForHour } from "@/lib/daily-welcome";
+
+describe("daily welcome",()=>{it("uses the visitor's local hour for the greeting",()=>{expect(greetingForHour(8)).toBe("Good morning");expect(greetingForHour(14)).toBe("Good afternoon");expect(greetingForHour(20)).toBe("Good evening")});it("keeps one encouragement for the entire local day",()=>{expect(encouragementForDate(new Date(2026,7,23,1))).toBe(encouragementForDate(new Date(2026,7,23,23)));expect(encouragementForDate(new Date(2026,7,23))).not.toBe(encouragementForDate(new Date(2026,7,24)))});});
 
 describe("match scoring", () => {
   it("applies weights and clamps inputs", () => expect(calculateMatchScore({ relevantExperience: 1, transferableExperience: .5, location: 2 })).toBe(41));
