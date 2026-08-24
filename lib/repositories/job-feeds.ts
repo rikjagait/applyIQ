@@ -5,6 +5,7 @@ import { createSupabaseServerClient, requireUser } from "@/lib/supabase/server";
 import { discoverAtsJobs, type DiscoveredJob } from "@/lib/job-discovery/ats";
 import { prioritizeDiscoveredJobs } from "@/lib/job-discovery/prioritize";
 import { getJobPreferences } from "@/lib/repositories/preferences";
+import { getLatestResumeText } from "@/lib/repositories/resumes";
 
 export type JobFeed = {
   id: string;
@@ -116,9 +117,10 @@ export async function refreshJobFeeds(): Promise<{
   scanned: number;
   results: Array<{ feedId: string; jobs: DiscoveredJob[] }>;
 }> {
-  const [feeds, preferences] = await Promise.all([
+  const [feeds, preferences, resumeText] = await Promise.all([
     listJobFeeds(),
     getJobPreferences(),
+    getLatestResumeText(),
   ]);
   const verifiedAt = new Date().toISOString();
   const preview = await isPreviewMode();
@@ -134,13 +136,16 @@ export async function refreshJobFeeds(): Promise<{
               (job) => `${job.provider}:${job.externalId}`,
             ),
           );
-          const jobs = prioritizeDiscoveredJobs(allJobs, 50, preferences).map(
-            (job) => ({
-              ...job,
-              isNew: !previous.has(`${job.provider}:${job.externalId}`),
-              lastVerifiedAt: verifiedAt,
-            }),
-          );
+          const jobs = prioritizeDiscoveredJobs(
+            allJobs,
+            50,
+            preferences,
+            resumeText ?? undefined,
+          ).map((job) => ({
+            ...job,
+            isNew: !previous.has(`${job.provider}:${job.externalId}`),
+            lastVerifiedAt: verifiedAt,
+          }));
           if (supabase) {
             await supabase
               .from("job_feeds")

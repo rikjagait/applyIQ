@@ -21,6 +21,24 @@ export async function refreshAllScheduledFeeds() {
           typeof defaultJobPreferences
         >;
         const preferences = { ...defaultJobPreferences, ...stored };
+        const { data: master } = await supabase
+          .from("resumes")
+          .select("id")
+          .eq("profile_id", feed.profile_id)
+          .eq("is_master", true)
+          .maybeSingle();
+        const { data: version } = master
+          ? await supabase
+              .from("resume_versions")
+              .select("content")
+              .eq("resume_id", master.id)
+              .order("version", { ascending: false })
+              .limit(1)
+              .maybeSingle()
+          : { data: null };
+        const rawText = (version?.content as { rawText?: unknown } | null)
+          ?.rawText;
+        const resumeText = typeof rawText === "string" ? rawText : undefined;
         const all = await discoverAtsJobs(feed.board_url);
         const previous = new Set(
           ((feed.last_snapshot || []) as DiscoveredJob[]).map(
@@ -28,13 +46,16 @@ export async function refreshAllScheduledFeeds() {
           ),
         );
         const now = new Date().toISOString();
-        const jobs = prioritizeDiscoveredJobs(all, 50, preferences).map(
-          (job) => ({
-            ...job,
-            isNew: !previous.has(`${job.provider}:${job.externalId}`),
-            lastVerifiedAt: now,
-          }),
-        );
+        const jobs = prioritizeDiscoveredJobs(
+          all,
+          50,
+          preferences,
+          resumeText,
+        ).map((job) => ({
+          ...job,
+          isNew: !previous.has(`${job.provider}:${job.externalId}`),
+          lastVerifiedAt: now,
+        }));
         const { error: updateError } = await supabase
           .from("job_feeds")
           .update({

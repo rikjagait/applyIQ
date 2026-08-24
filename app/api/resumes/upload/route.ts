@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import mammoth from "mammoth";
 import { requireUser } from "@/lib/supabase/server";
 import { resumeUploadSchema } from "@/lib/validation";
+import { analyzeDeterministically } from "@/lib/ai/job-analysis";
 
 export const runtime = "nodejs";
 const DOCX =
@@ -83,6 +84,54 @@ export async function POST(request: Request) {
           "Original text extracted from user-uploaded master résumé.",
       });
     if (versionError) throw versionError;
+    await supabase
+      .from("job_feeds")
+      .update({ last_snapshot: [], last_job_count: 0, last_checked_at: null })
+      .eq("profile_id", profile.id);
+    const { data: existingJobs } = await supabase
+      .from("jobs")
+      .select("id,title,location,description,companies(name)")
+      .eq("profile_id", profile.id)
+      .is("dismissed_at", null);
+    for (const job of existingJobs ?? []) {
+      const companyRelation = Array.isArray(job.companies)
+        ? job.companies[0]
+        : job.companies;
+      const analysis = analyzeDeterministically(
+        {
+          title: job.title,
+          company: companyRelation?.name || "Company",
+          location: job.location || "Location not specified",
+          description: job.description,
+        },
+        content,
+      );
+      await supabase
+        .from("job_matches")
+        .update({
+          score: analysis.score,
+          category: analysis.category,
+          interview_probability: analysis.probability,
+          factor_scores: analysis.factorScores,
+          strengths: analysis.strengths,
+          gaps: analysis.gaps,
+          explanation: analysis.summary,
+          created_at: new Date().toISOString(),
+        })
+        .eq("job_id", job.id)
+        .eq("profile_id", profile.id);
+      await supabase.from("job_requirements").delete().eq("job_id", job.id);
+      await supabase
+        .from("job_requirements")
+        .insert(
+          analysis.requirements.map((item, index) => ({
+            job_id: job.id,
+            requirement: item.requirement,
+            importance: item.importance.toLowerCase(),
+            sort_order: index,
+          })),
+        );
+    }
     return NextResponse.json({
       ok: true,
       name: file.name,

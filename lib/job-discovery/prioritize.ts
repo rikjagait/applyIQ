@@ -1,10 +1,243 @@
 import type { DiscoveredJob } from "@/lib/job-discovery/ats";
-const roleSignals=["learning","training","engagement","community","program","project","partnership","stakeholder","events","education","enablement","people","talent","operations","customer success"];
-const strongRoleSignals=["learning","training","engagement","community","partnership","stakeholder","events","education","enablement","people","talent","customer success"];
-const targetLocations=["new york","nyc","jersey city","new jersey","remote","united states","us -"];
-const technicalTitle=/\b(machine learning|artificial intelligence|software|engineer(?:ing)?|data scien(?:ce|tist)|developer|cloud|cyber|security|infrastructure|solutions architect|technical program|product manager)\b/i;
-function locationMatches(location:string,locations:string[]){const targets=locations.filter(value=>!value.includes("remote"));if(targets.some(target=>location.includes(target)))return true;const wantsRemote=locations.some(value=>value.includes("remote"));if(!wantsRemote)return false;const remote=location.includes("remote");const explicitlyForeign=/\b(india|canada|uk|united kingdom|europe|brussels|london|paris|germany|france|singapore|australia)\b/.test(location);return remote&&!explicitlyForeign&&(location==="remote"||/\b(us|usa|united states)\b/.test(location));}
-type DiscoveryPreferences={roles?:string[];locations?:string[];excludedRoles?:string[];excludedIndustries?:string[];arrangements?:string[];employmentTypes?:string[]};
-export function assessDiscoveredJob(job:DiscoveredJob,preferences?:DiscoveryPreferences){const title=job.title.toLowerCase();const location=job.location.toLowerCase();const evidence=`${job.title} ${job.description||""} ${job.department||""}`.toLowerCase();const roles=preferences?.roles?.length?preferences.roles.map(x=>x.toLowerCase()):roleSignals;const locations=preferences?.locations?.length?preferences.locations.map(x=>x.toLowerCase()):targetLocations;const excluded=(preferences?.excludedRoles||[]).map(x=>x.toLowerCase()).filter(Boolean);const preferenceHits=roles.filter(signal=>evidence.includes(signal));const titleHits=roles.filter(signal=>title.includes(signal));const strongHits=strongRoleSignals.filter(signal=>title.includes(signal));const genericProgramFit=/\b(program|project|operations)\b/.test(title)&&!technicalTitle.test(title);const roleFit=strongHits.length>0||genericProgramFit;const locationFit=locationMatches(location,locations);const excessiveSeniority=/\b(chief|vice president|vp|head of)\b/.test(title);const technicalMismatch=technicalTitle.test(title);const excludedMismatch=excluded.some(term=>evidence.includes(term));const arrangementMismatch=Boolean(preferences?.arrangements?.length&&job.arrangement&&!preferences.arrangements.some(x=>x.toLowerCase()===job.arrangement?.toLowerCase()));const employmentMismatch=Boolean(preferences?.employmentTypes?.length&&job.employmentType&&!preferences.employmentTypes.some(x=>job.employmentType?.toLowerCase().includes(x.toLowerCase())));const freshness=job.postedAt&&Number.isFinite(Date.parse(job.postedAt))?Math.max(0,15-Math.floor((Date.now()-Date.parse(job.postedAt))/86400000)):0;const score=Math.max(0,Math.min(100,strongHits.length*22+titleHits.length*14+Math.min(preferenceHits.length,4)*5+(genericProgramFit?16:0)+(locationFit?25:0)+freshness-(excessiveSeniority?25:0)-(technicalMismatch?100:0)-(excludedMismatch?100:0)-(arrangementMismatch?20:0)-(employmentMismatch?15:0)));const focus=(titleHits.length?titleHits:strongHits).slice(0,2).join(" and ")||"non-technical program delivery";const detail=job.description?"full job description":"job title and location";return {score,eligible:roleFit&&locationFit&&!technicalMismatch&&!excessiveSeniority&&!excludedMismatch&&!arrangementMismatch&&!employmentMismatch,reason:`Recommended from the ${detail}: strong ${focus} alignment, compatible location (${job.location})${freshness?", and a recent posting date":""}.`};}
-export function discoveryPriority(job:DiscoveredJob,preferences?:DiscoveryPreferences){return assessDiscoveredJob(job,preferences).score}
-export function prioritizeDiscoveredJobs(jobs:DiscoveredJob[],limit=50,preferences?:DiscoveryPreferences){const unique=new Map<string,DiscoveredJob>();for(const job of jobs){const key=`${job.company}|${job.title}|${job.location}`.toLowerCase().replace(/[^a-z0-9|]+/g," ");const current=unique.get(key);if(!current||(job.postedAt&&(!current.postedAt||Date.parse(job.postedAt)>Date.parse(current.postedAt))))unique.set(key,job)}return [...unique.values()].map(job=>({job,assessment:assessDiscoveredJob(job,preferences)})).filter(item=>item.assessment.eligible&&item.assessment.score>=60).sort((a,b)=>b.assessment.score-a.assessment.score||((b.job.postedAt?Date.parse(b.job.postedAt):0)-(a.job.postedAt?Date.parse(a.job.postedAt):0))).slice(0,limit).map(({job,assessment})=>({...job,matchScore:assessment.score,matchReason:assessment.reason}))}
+const roleSignals = [
+  "learning",
+  "training",
+  "engagement",
+  "community",
+  "program",
+  "project",
+  "partnership",
+  "stakeholder",
+  "events",
+  "education",
+  "enablement",
+  "people",
+  "talent",
+  "operations",
+  "customer success",
+];
+const strongRoleSignals = [
+  "learning",
+  "training",
+  "engagement",
+  "community",
+  "partnership",
+  "stakeholder",
+  "events",
+  "education",
+  "enablement",
+  "people",
+  "talent",
+  "customer success",
+];
+const targetLocations = [
+  "new york",
+  "nyc",
+  "jersey city",
+  "new jersey",
+  "remote",
+  "united states",
+  "us -",
+];
+const technicalTitle =
+  /\b(machine learning|artificial intelligence|software|engineer(?:ing)?|data scien(?:ce|tist)|developer|cloud|cyber|security|infrastructure|solutions architect|technical program|product manager)\b/i;
+function locationMatches(location: string, locations: string[]) {
+  const targets = locations.filter((value) => !value.includes("remote"));
+  if (targets.some((target) => location.includes(target))) return true;
+  const wantsRemote = locations.some((value) => value.includes("remote"));
+  if (!wantsRemote) return false;
+  const remote = location.includes("remote");
+  const explicitlyForeign =
+    /\b(india|canada|uk|united kingdom|europe|brussels|london|paris|germany|france|singapore|australia)\b/.test(
+      location,
+    );
+  return (
+    remote &&
+    !explicitlyForeign &&
+    (location === "remote" || /\b(us|usa|united states)\b/.test(location))
+  );
+}
+type DiscoveryPreferences = {
+  roles?: string[];
+  locations?: string[];
+  excludedRoles?: string[];
+  excludedIndustries?: string[];
+  arrangements?: string[];
+  employmentTypes?: string[];
+};
+const stopWords = new Set([
+  "with",
+  "that",
+  "this",
+  "from",
+  "your",
+  "have",
+  "will",
+  "role",
+  "team",
+  "work",
+  "years",
+  "experience",
+  "skills",
+  "required",
+  "preferred",
+  "about",
+  "their",
+]);
+function resumeOverlap(jobText: string, resumeText?: string) {
+  if (!resumeText) return 0;
+  const resumeTokens = new Set(
+    (resumeText.toLowerCase().match(/[a-z][a-z-]{4,}/g) ?? []).filter(
+      (token) => !stopWords.has(token),
+    ),
+  );
+  const jobTokens = [
+    ...new Set(
+      (jobText.match(/[a-z][a-z-]{4,}/g) ?? []).filter(
+        (token) => !stopWords.has(token),
+      ),
+    ),
+  ];
+  return jobTokens.length
+    ? jobTokens.filter((token) => resumeTokens.has(token)).length /
+        jobTokens.length
+    : 0;
+}
+export function assessDiscoveredJob(
+  job: DiscoveredJob,
+  preferences?: DiscoveryPreferences,
+  resumeText?: string,
+) {
+  const title = job.title.toLowerCase();
+  const location = job.location.toLowerCase();
+  const evidence =
+    `${job.title} ${job.description || ""} ${job.department || ""}`.toLowerCase();
+  const roles = preferences?.roles?.length
+    ? preferences.roles.map((x) => x.toLowerCase())
+    : roleSignals;
+  const locations = preferences?.locations?.length
+    ? preferences.locations.map((x) => x.toLowerCase())
+    : targetLocations;
+  const excluded = (preferences?.excludedRoles || [])
+    .map((x) => x.toLowerCase())
+    .filter(Boolean);
+  const preferenceHits = roles.filter((signal) => evidence.includes(signal));
+  const titleHits = roles.filter((signal) => title.includes(signal));
+  const strongHits = strongRoleSignals.filter((signal) =>
+    title.includes(signal),
+  );
+  const genericProgramFit =
+    /\b(program|project|operations)\b/.test(title) &&
+    !technicalTitle.test(title);
+  const roleFit = strongHits.length > 0 || genericProgramFit;
+  const locationFit = locationMatches(location, locations);
+  const excessiveSeniority = /\b(chief|vice president|vp|head of)\b/.test(
+    title,
+  );
+  const technicalMismatch = technicalTitle.test(title);
+  const excludedMismatch = excluded.some((term) => evidence.includes(term));
+  const arrangementMismatch = Boolean(
+    preferences?.arrangements?.length &&
+      job.arrangement &&
+      !preferences.arrangements.some(
+        (x) => x.toLowerCase() === job.arrangement?.toLowerCase(),
+      ),
+  );
+  const employmentMismatch = Boolean(
+    preferences?.employmentTypes?.length &&
+      job.employmentType &&
+      !preferences.employmentTypes.some((x) =>
+        job.employmentType?.toLowerCase().includes(x.toLowerCase()),
+      ),
+  );
+  const freshness =
+    job.postedAt && Number.isFinite(Date.parse(job.postedAt))
+      ? Math.max(
+          0,
+          15 - Math.floor((Date.now() - Date.parse(job.postedAt)) / 86400000),
+        )
+      : 0;
+  const resumeFit = resumeOverlap(evidence, resumeText);
+  const score = Math.max(
+    0,
+    Math.min(
+      100,
+      strongHits.length * 22 +
+        titleHits.length * 14 +
+        Math.min(preferenceHits.length, 4) * 5 +
+        (genericProgramFit ? 16 : 0) +
+        (locationFit ? 25 : 0) +
+        Math.round(resumeFit * 35) +
+        freshness -
+        (excessiveSeniority ? 25 : 0) -
+        (technicalMismatch ? 100 : 0) -
+        (excludedMismatch ? 100 : 0) -
+        (arrangementMismatch ? 20 : 0) -
+        (employmentMismatch ? 15 : 0),
+    ),
+  );
+  const focus =
+    (titleHits.length ? titleHits : strongHits).slice(0, 2).join(" and ") ||
+    "non-technical program delivery";
+  const detail = job.description
+    ? "full job description"
+    : "job title and location";
+  return {
+    score,
+    eligible:
+      roleFit &&
+      locationFit &&
+      !technicalMismatch &&
+      !excessiveSeniority &&
+      !excludedMismatch &&
+      !arrangementMismatch &&
+      !employmentMismatch,
+    reason: `Recommended from the ${detail}: ${Math.round(resumeFit * 100)}% evidence overlap with the latest résumé, strong ${focus} alignment, and compatible location (${job.location})${freshness ? ", with a recent posting date" : ""}.`,
+  };
+}
+export function discoveryPriority(
+  job: DiscoveredJob,
+  preferences?: DiscoveryPreferences,
+  resumeText?: string,
+) {
+  return assessDiscoveredJob(job, preferences, resumeText).score;
+}
+export function prioritizeDiscoveredJobs(
+  jobs: DiscoveredJob[],
+  limit = 50,
+  preferences?: DiscoveryPreferences,
+  resumeText?: string,
+) {
+  const unique = new Map<string, DiscoveredJob>();
+  for (const job of jobs) {
+    const key = `${job.company}|${job.title}|${job.location}`
+      .toLowerCase()
+      .replace(/[^a-z0-9|]+/g, " ");
+    const current = unique.get(key);
+    if (
+      !current ||
+      (job.postedAt &&
+        (!current.postedAt ||
+          Date.parse(job.postedAt) > Date.parse(current.postedAt)))
+    )
+      unique.set(key, job);
+  }
+  return [...unique.values()]
+    .map((job) => ({
+      job,
+      assessment: assessDiscoveredJob(job, preferences, resumeText),
+    }))
+    .filter((item) => item.assessment.eligible && item.assessment.score >= 60)
+    .sort(
+      (a, b) =>
+        b.assessment.score - a.assessment.score ||
+        (b.job.postedAt ? Date.parse(b.job.postedAt) : 0) -
+          (a.job.postedAt ? Date.parse(a.job.postedAt) : 0),
+    )
+    .slice(0, limit)
+    .map(({ job, assessment }) => ({
+      ...job,
+      matchScore: assessment.score,
+      matchReason: assessment.reason,
+    }));
+}

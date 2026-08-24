@@ -42,6 +42,14 @@ describe("job analysis", () => {
     expect(result.score).toBeGreaterThanOrEqual(0); expect(result.score).toBeLessThanOrEqual(100);
     expect(result.arrangement).toBe("Hybrid"); expect(result.salary).toContain("$95,000");
   });
+  it("changes fit evidence and score when the latest résumé changes", () => {
+    const vacancy = { title:"Learning Program Manager", company:"Example Co", location:"New York, NY", description:"We require experience designing learning programs, facilitating training workshops, managing stakeholder partnerships and reporting program outcomes." };
+    const aligned = analyzeDeterministically(vacancy, "Learning program manager who designed training workshops, managed stakeholder partnerships and reported measurable program outcomes.");
+    const unrelated = analyzeDeterministically(vacancy, "Retail assistant responsible for cash handling, stock replenishment and customer checkout operations.");
+    expect(aligned.score).toBeGreaterThan(unrelated.score);
+    expect(aligned.requirements.some(item => item.evidence.includes("Learning program manager"))).toBe(true);
+    expect(unrelated.requirements.some(item => item.evidence.includes("No evidence identified"))).toBe(true);
+  });
 });
 describe("URL job ingestion", () => {
   it("extracts a schema.org JobPosting", () => {
