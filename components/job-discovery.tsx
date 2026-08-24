@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, RefreshCw, Rss, Search } from "lucide-react";
+import { ArrowUpRight, RefreshCw, Rss, Search, Trash2 } from "lucide-react";
 import type { DiscoveredJob } from "@/lib/job-discovery/ats";
 import type { JobFeed } from "@/lib/repositories/job-feeds";
 
@@ -20,6 +20,8 @@ export function JobDiscovery({ initialFeeds }: { initialFeeds: JobFeed[] }) {
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const [advanced, setAdvanced] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [removingFeedId, setRemovingFeedId] = useState<string | null>(null);
   const started = useRef(false);
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -128,6 +130,29 @@ export function JobDiscovery({ initialFeeds }: { initialFeeds: JobFeed[] }) {
     );
     setPending(false);
   }
+  async function removeFeed(feed: JobFeed) {
+    if (confirmRemoveId !== feed.id) {
+      setConfirmRemoveId(feed.id);
+      return;
+    }
+    setRemovingFeedId(feed.id);
+    setError("");
+    const response = await fetch("/api/job-feeds", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: feed.id }),
+    });
+    const result = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(result.error || "Could not remove that company.");
+      setRemovingFeedId(null);
+      return;
+    }
+    setFeeds((current) => current.filter((item) => item.id !== feed.id));
+    setConfirmRemoveId(null);
+    setRemovingFeedId(null);
+    setMessage(`${feed.name} was removed from the watchlist.`);
+  }
   useEffect(() => {
     if (started.current || !feeds.length || hasInitialJobs) return;
     started.current = true;
@@ -163,6 +188,28 @@ export function JobDiscovery({ initialFeeds }: { initialFeeds: JobFeed[] }) {
                   {feed.provider} · {feed.lastJobCount} last found
                 </small>
               </span>
+              <button
+                className={
+                  confirmRemoveId === feed.id
+                    ? "feed-remove confirming"
+                    : "feed-remove"
+                }
+                type="button"
+                aria-label={
+                  confirmRemoveId === feed.id
+                    ? `Confirm removal of ${feed.name}`
+                    : `Remove ${feed.name} from watchlist`
+                }
+                disabled={removingFeedId === feed.id}
+                onClick={() => void removeFeed(feed)}
+              >
+                <Trash2 size={13} />
+                {removingFeedId === feed.id
+                  ? "Removing…"
+                  : confirmRemoveId === feed.id
+                    ? "Confirm"
+                    : "Remove"}
+              </button>
             </div>
           ))}
           {!feeds.length && (

@@ -97,6 +97,19 @@ export async function createJobFeed(input: { name: string; boardUrl: string }) {
   if (error) throw error;
   return { id: data.id as string, provider, preview: false };
 }
+export async function deleteJobFeed(id: string) {
+  if (await isPreviewMode()) return { id, preview: true };
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase
+    .from("job_feeds")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Company watchlist entry not found.");
+  return { id: data.id as string, preview: false };
+}
 export async function refreshJobFeeds(): Promise<{
   feeds: number;
   jobs: number;
