@@ -13,21 +13,22 @@ type JobRow = {
   companies:{name:string;industry:string|null}|Array<{name:string;industry:string|null}>|null;
   job_matches:Array<{score:number|string;category:string;interview_probability:number|string|null;strengths:unknown;gaps:unknown;explanation:string|null}>;
   applications:Array<{status:string}>; job_requirements?:Array<{requirement:string;importance:string}>;
+  job_sources:{source_url:string|null;original_url:string|null}|Array<{source_url:string|null;original_url:string|null}>|null;
 };
 
 const statusMap: Record<string, ApplicationStage> = { discovered:"Discovered",shortlisted:"Shortlisted",preparing:"Preparing Application",ready:"Ready to Apply",applied:"Applied",recruiter_screen:"Recruiter Screen",interview:"Interview",final_interview:"Final Interview",offer:"Offer",rejected:"Rejected",withdrawn:"Withdrawn",closed:"Closed" };
 function textArray(value: unknown): string[] { return Array.isArray(value) ? value.filter((v):v is string=>typeof v === "string") : []; }
 function mapRow(row: JobRow): Job {
-  const company=Array.isArray(row.companies)?row.companies[0]:row.companies; const match=row.job_matches?.[0];
+  const company=Array.isArray(row.companies)?row.companies[0]:row.companies; const match=row.job_matches?.[0];const source=Array.isArray(row.job_sources)?row.job_sources[0]:row.job_sources;
   const score=Number(match?.score??0); const category=(match?.category || (score>=80?"Strong Match":score>=65?"Good / Stretch":"Weak Match")) as MatchCategory;
   const salary=row.salary_min ? `$${row.salary_min.toLocaleString()}${row.salary_max?`–$${row.salary_max.toLocaleString()}`:"+"}` : null;
-  return {id:row.id,title:row.title,company:company?.name??"Unknown company",location:row.location??"Location not specified",arrangement:(row.arrangement==="remote"?"Remote":row.arrangement==="hybrid"?"Hybrid":"On-site") as WorkArrangement,salary,employmentType:row.employment_type==="Part-time"?"Part-time":"Full-time",roleFamily:row.role_family??"Adjacent Opportunity",industry:company?.industry??"Not specified",postedDaysAgo:row.date_posted?Math.max(0,Math.floor((Date.now()-new Date(row.date_posted).getTime())/86400000)):Math.max(0,Math.floor((Date.now()-new Date(row.created_at).getTime())/86400000)),source:"Saved URL",score,probability:Number(match?.interview_probability??0),category,summary:match?.explanation??"Analysis pending.",strengths:textArray(match?.strengths),gaps:textArray(match?.gaps),requirements:(row.job_requirements??[]).map(r=>({requirement:r.requirement,importance:r.importance==="preferred"?"Preferred":"Required",evidence:"See verified Experience Bank",strength:"Moderate",gap:"Review evidence mapping"})),status:statusMap[row.applications?.[0]?.status]??"Discovered"};
+  return {id:row.id,title:row.title,company:company?.name??"Unknown company",location:row.location??"Location not specified",arrangement:(row.arrangement==="remote"?"Remote":row.arrangement==="hybrid"?"Hybrid":"On-site") as WorkArrangement,salary,employmentType:row.employment_type==="Part-time"?"Part-time":"Full-time",roleFamily:row.role_family??"Adjacent Opportunity",industry:company?.industry??"Not specified",postedDaysAgo:row.date_posted?Math.max(0,Math.floor((Date.now()-new Date(row.date_posted).getTime())/86400000)):Math.max(0,Math.floor((Date.now()-new Date(row.created_at).getTime())/86400000)),source:"Saved URL",sourceUrl:source?.original_url||source?.source_url||undefined,score,probability:Number(match?.interview_probability??0),category,summary:match?.explanation??"Analysis pending.",strengths:textArray(match?.strengths),gaps:textArray(match?.gaps),requirements:(row.job_requirements??[]).map(r=>({requirement:r.requirement,importance:r.importance==="preferred"?"Preferred":"Required",evidence:"See verified Experience Bank",strength:"Moderate",gap:"Review evidence mapping"})),status:statusMap[row.applications?.[0]?.status]??"Discovered"};
 }
 
 export async function listJobs(): Promise<Job[]> {
   if (!isSupabaseConfigured() || await isPreviewMode()) return demoJobs;
   const supabase=await createSupabaseServerClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user) return [];
-  const {data,error}=await supabase.from("jobs").select("id,title,location,arrangement,salary_min,salary_max,employment_type,role_family,date_posted,created_at,description,is_demo,companies(name,industry),job_matches(score,category,interview_probability,strengths,gaps,explanation),applications(status),job_requirements(requirement,importance)").is("dismissed_at",null).order("created_at",{ascending:false});
+  const {data,error}=await supabase.from("jobs").select("id,title,location,arrangement,salary_min,salary_max,employment_type,role_family,date_posted,created_at,description,is_demo,companies(name,industry),job_sources(source_url,original_url),job_matches(score,category,interview_probability,strengths,gaps,explanation),applications(status),job_requirements(requirement,importance)").is("dismissed_at",null).order("created_at",{ascending:false});
   if(error){console.error("Could not list jobs",error);return [];} return (data as unknown as JobRow[]).map(mapRow);
 }
 
