@@ -9,6 +9,9 @@ export type DiscoveredJob = {
   postedAt: string | null;
   jobUrl: string;
   provider: "Greenhouse" | "Lever" | "Ashby";
+  discoveredVia?: "Stapply" | "Direct employer feed";
+  matchScore?: number;
+  matchReason?: string;
 };
 
 const inputSchema = z.string().url().max(2000);
@@ -54,7 +57,7 @@ export async function discoverAtsJobsByCompanyName(companyName:string){
     for (const company of supported) {
       try {
         const jobs = await discoverAtsJobs(company.url);
-        if (jobs.length) return { jobs: jobs.map(job => ({ ...job, company: company.name })), boardUrl: company.url, directoryUpdatedAt: directory.updatedAt, source: "Stapply open jobs directory" };
+        if (jobs.length) return { jobs: jobs.map(job => ({ ...job, company: company.name, discoveredVia: "Stapply" as const })), boardUrl: company.url, directoryUpdatedAt: directory.updatedAt, source: "Stapply open jobs directory" };
       } catch { /* Try the next exact directory match. */ }
     }
   } catch { /* Fall back to direct ATS slug detection when the directory is unavailable. */ }
@@ -65,5 +68,5 @@ export async function discoverAtsJobsByCompanyName(companyName:string){
   ]);
   const attempts=await Promise.all(candidates.map(async boardUrl=>{try{const jobs=await discoverAtsJobs(boardUrl);return jobs.length?{jobs,boardUrl}:null}catch{return null}}));
   const match=attempts.find(Boolean);if(!match)throw new Error("ApplyIQ could not automatically locate a supported careers board for that company. Open ‘Advanced’ and paste its careers URL instead.");
-  return { ...match, directoryUpdatedAt: null, source: "Direct ATS lookup" };
+  return { ...match, jobs: match.jobs.map(job => ({ ...job, discoveredVia: "Direct employer feed" as const })), directoryUpdatedAt: null, source: "Direct ATS lookup" };
 }

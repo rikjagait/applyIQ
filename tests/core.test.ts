@@ -8,7 +8,7 @@ import { isPrivateAddress, validateJobUrl } from "@/lib/job-ingestion/url-safety
 import { jobIntakeSchema } from "@/lib/validation";
 import { buildApplicationStudio } from "@/lib/application-studio";
 import { jobs } from "@/lib/data";
-import { prioritizeDiscoveredJobs } from "@/lib/job-discovery/prioritize";
+import { assessDiscoveredJob, prioritizeDiscoveredJobs } from "@/lib/job-discovery/prioritize";
 import { parseCompanyDirectory, rankCompanyMatches } from "@/lib/job-discovery/stapply";
 
 describe("match scoring", () => {
@@ -30,6 +30,7 @@ describe("factual integrity", () => {
 });
 describe("application studio",()=>{it("maps each tailored claim to its exact source evidence",()=>{const studio=buildApplicationStudio(jobs[0]);expect(studio.changes[3].original).toContain("team of three");expect(studio.changes.every(change=>change.integrity!=="RED")).toBe(true);expect(studio.coverLetter).toContain("Northstar Health");});});
 describe("discovery prioritization",()=>{it("keeps relevant target-market roles ahead of unrelated technical jobs",()=>{const found=prioritizeDiscoveredJobs([{externalId:"1",title:"Learning Program Manager",company:"A",location:"New York City",postedAt:null,jobUrl:"https://example.com/1",provider:"Ashby"},{externalId:"2",title:"Software Engineer",company:"A",location:"San Francisco",postedAt:null,jobUrl:"https://example.com/2",provider:"Ashby"}]);expect(found.map(job=>job.externalId)).toEqual(["1"])});});
+describe("strict discovery fit",()=>{const job=(title:string,location="US - Remote")=>({externalId:title,title,company:"Example",location,postedAt:null,jobUrl:"https://example.com/job",provider:"Ashby" as const});it("excludes machine-learning and technical program roles even when program is a preference",()=>{expect(assessDiscoveredJob(job("Machine Learning Program Manager")).eligible).toBe(false);expect(assessDiscoveredJob(job("Technical Program Manager, Cloud AI Partnerships")).eligible).toBe(false)});it("excludes remote roles tied to a foreign market",()=>{expect(assessDiscoveredJob(job("Learning Program Manager","India - Remote")).eligible).toBe(false)});it("explains a credible target-market match",()=>{const result=prioritizeDiscoveredJobs([job("Customer Learning Program Lead")]);expect(result[0].matchReason).toContain("learning");expect(result[0].matchScore).toBeGreaterThanOrEqual(60)});});
 describe("Stapply company directory",()=>{it("parses quoted company names and ranks exact matches first",()=>{const entries=parseCompanyDirectory('ats,name,slug,url\nashby,"Example, Inc.",example,https://jobs.ashbyhq.com/example\nlever,Example Labs,example-labs,https://jobs.lever.co/example-labs');expect(entries[0].name).toBe("Example, Inc.");expect(rankCompanyMatches(entries,"Example")[0].slug).toBe("example");});});
 describe("job analysis", () => {
   it("extracts requirements and produces explainable bounded scoring", () => {
