@@ -1,0 +1,4 @@
+import { z } from "zod";
+import { createCareerEvidence } from "@/lib/repositories/career-truth";
+const schema=z.object({employer:z.string().trim().min(2).max(160),position:z.string().trim().min(2).max(200),type:z.enum(["Achievement","Responsibility","Leadership"]),content:z.string().trim().min(10).max(5000),tags:z.string().max(1000),sourceReference:z.string().trim().max(500).optional()});
+export async function POST(request:Request){try{const parsed=schema.safeParse(await request.json());if(!parsed.success)return Response.json({error:"Complete the employer, position and evidence wording."},{status:400});return Response.json(await createCareerEvidence({...parsed.data,tags:parsed.data.tags.split(",").map(tag=>tag.trim()).filter(Boolean)}),{status:201})}catch(error){return Response.json({error:error instanceof Error?error.message:"Could not add evidence."},{status:500})}}

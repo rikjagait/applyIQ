@@ -1,0 +1,4 @@
+import "server-only";
+import { isPreviewMode } from "@/lib/preview";
+import { requireUser } from "@/lib/supabase/server";
+export async function saveJobFeedback(input:{jobId:string;feedbackType:string;reason:string;notes?:string}){if(await isPreviewMode())return {preview:true};const {supabase,user}=await requireUser();const {data:profile}=await supabase.from("profiles").select("id").eq("auth_user_id",user.id).single();if(!profile)throw new Error("Private profile not found");const {error}=await supabase.from("user_feedback").insert({profile_id:profile.id,job_id:input.jobId,feedback_type:input.feedbackType,reason:input.reason,notes:input.notes||null});if(error)throw error;if(input.feedbackType==="dismissed"){const {error:dismissError}=await supabase.from("jobs").update({dismissed_at:new Date().toISOString()}).eq("id",input.jobId).eq("profile_id",profile.id);if(dismissError)throw dismissError}return {preview:false}}

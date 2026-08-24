@@ -1,0 +1,4 @@
+import { z } from "zod";
+import { createContactForJob } from "@/lib/repositories/contacts";
+const schema=z.object({jobId:z.string().min(1).max(100),name:z.string().trim().min(2).max(160),title:z.string().trim().max(200).optional(),relationship:z.string().trim().max(100).optional(),publicProfileUrl:z.union([z.literal(""),z.string().url().max(2000)]).optional(),notes:z.string().trim().max(3000).optional()});
+export async function POST(request:Request){try{const parsed=schema.safeParse(await request.json());if(!parsed.success)return Response.json({error:"Check the contact details and public profile URL."},{status:400});const result=await createContactForJob(parsed.data);return Response.json(result,{status:201});}catch(error){const message=error instanceof Error?error.message:"Could not save contact.";return Response.json({error:message},{status:/Unauthorized/.test(message)?401:500});}}

@@ -1,0 +1,4 @@
+import { z } from "zod";
+import { updateContactOutreach } from "@/lib/repositories/contacts";
+const schema=z.object({contacted:z.boolean(),response:z.enum(["","Awaiting response","Replied","Conversation scheduled","Referral offered","No response"]),followupDate:z.union([z.literal(""),z.string().date()]).nullable()});
+export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){try{const body=schema.safeParse(await request.json());if(!body.success)return Response.json({error:"Check the outreach status and follow-up date."},{status:400});const {id}=await params;await updateContactOutreach({contactId:id,contacted:body.data.contacted,response:body.data.response,followupDate:body.data.followupDate||null});return Response.json({ok:true});}catch(error){const message=error instanceof Error?error.message:"Could not update outreach.";return Response.json({error:message},{status:/Unauthorized/.test(message)?401:500});}}

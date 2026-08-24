@@ -1,0 +1,4 @@
+import { z } from "zod";
+import { saveJobFeedback } from "@/lib/repositories/feedback";
+const schema=z.object({feedbackType:z.enum(["useful","not_useful","dismissed"]),reason:z.enum(["role_mismatch","location","compensation","seniority","industry","requirements","duplicate","not_interested","good_recommendation"]),notes:z.string().trim().max(3000).optional()});
+export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){try{const parsed=schema.safeParse(await request.json());if(!parsed.success)return Response.json({error:"Choose a feedback reason."},{status:400});const {id}=await params;await saveJobFeedback({jobId:id,...parsed.data});return Response.json({ok:true})}catch(error){return Response.json({error:error instanceof Error?error.message:"Could not save feedback."},{status:500})}}

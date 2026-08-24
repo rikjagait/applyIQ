@@ -1,0 +1,4 @@
+import { z } from "zod";
+import { createInterview } from "@/lib/repositories/interviews";
+const schema=z.object({jobId:z.string().min(1),type:z.enum(["Video","Phone","In person"]),startsAt:z.string().datetime({local:true}),interviewer:z.string().trim().max(160).optional(),interviewerTitle:z.string().trim().max(200).optional(),stage:z.enum(["Recruiter Screen","Hiring Manager","Panel","Case / Presentation","Final"]),notes:z.string().trim().max(5000).optional()});
+export async function POST(request:Request){try{const parsed=schema.safeParse(await request.json());if(!parsed.success)return Response.json({error:"Check the interview date, type and stage."},{status:400});return Response.json(await createInterview(parsed.data),{status:201})}catch(error){return Response.json({error:error instanceof Error?error.message:"Could not save interview."},{status:500})}}

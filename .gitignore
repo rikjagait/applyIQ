@@ -1,0 +1,12 @@
+node_modules
+.next
+.env*
+!.env.example
+coverage
+*.log
+.DS_Store
+*.tsbuildinfo
+
+# Private career documents stay local. Upload them through ApplyIQ's private storage only.
+*.docx
+*.pdf
