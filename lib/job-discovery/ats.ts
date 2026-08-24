@@ -182,20 +182,41 @@ export async function discoverAtsJobs(
         typeOfEmployment?: { label?: string };
       }>;
     };
-    return (data.content ?? []).map((job) => ({
-      externalId: job.id,
-      title: job.name,
-      company: board.slug!,
-      location:
-        [job.location?.city, job.location?.region, job.location?.country]
-          .filter(Boolean)
-          .join(", ") || "Not specified",
-      postedAt: job.releasedDate || null,
-      jobUrl: `https://jobs.smartrecruiters.com/${board.slug}/${job.id}`,
-      provider: "SmartRecruiters",
-      department: job.department?.label,
-      employmentType: job.typeOfEmployment?.label,
-    }));
+    return Promise.all(
+      (data.content ?? []).map(async (job, index) => {
+        let description = "";
+        if (index < 20) {
+          try {
+            const detail = (await getJson(
+              `https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(board.slug!)}/postings/${encodeURIComponent(job.id)}`,
+            )) as { jobAd?: { sections?: Record<string, { text?: string }> } };
+            description = plain(
+              Object.values(detail.jobAd?.sections ?? {})
+                .map((section) => section.text || "")
+                .join(" "),
+            );
+          } catch {
+            /* Keep the listing when its detail endpoint is unavailable. */
+          }
+        }
+        return {
+          externalId: job.id,
+          title: job.name,
+          company: board.slug!,
+          location:
+            [job.location?.city, job.location?.region, job.location?.country]
+              .filter(Boolean)
+              .join(", ") || "Not specified",
+          postedAt: job.releasedDate || null,
+          jobUrl: `https://jobs.smartrecruiters.com/${board.slug}/${job.id}`,
+          provider: "SmartRecruiters",
+          description,
+          salary: salaryFromText(description),
+          department: job.department?.label,
+          employmentType: job.typeOfEmployment?.label,
+        };
+      }),
+    );
   }
   const endpoint = `https://${board.slug}.${board.instance}.myworkdayjobs.com/wday/cxs/${board.slug}/${board.site}/jobs`;
   const response = await fetch(endpoint, {
@@ -220,15 +241,32 @@ export async function discoverAtsJobs(
       postedOn?: string;
     }>;
   };
-  return (data.jobPostings ?? []).map((job) => ({
-    externalId: job.externalPath,
-    title: job.title,
-    company: board.slug!,
-    location: job.locationsText || "Not specified",
-    postedAt: job.postedOn || null,
-    jobUrl: `https://${board.slug}.${board.instance}.myworkdayjobs.com${job.externalPath}`,
-    provider: "Workday",
-  }));
+  return Promise.all(
+    (data.jobPostings ?? []).map(async (job, index) => {
+      let description = "";
+      if (index < 20) {
+        try {
+          const detail = (await getJson(
+            `https://${board.slug}.${board.instance}.myworkdayjobs.com/wday/cxs/${board.slug}/${board.site}${job.externalPath}`,
+          )) as { jobPostingInfo?: { jobDescription?: string } };
+          description = plain(detail.jobPostingInfo?.jobDescription);
+        } catch {
+          /* Preserve the listing and label incomplete specifications in the UI. */
+        }
+      }
+      return {
+        externalId: job.externalPath,
+        title: job.title,
+        company: board.slug!,
+        location: job.locationsText || "Not specified",
+        postedAt: job.postedOn || null,
+        jobUrl: `https://${board.slug}.${board.instance}.myworkdayjobs.com${job.externalPath}`,
+        provider: "Workday",
+        description,
+        salary: salaryFromText(description),
+      };
+    }),
+  );
 }
 
 function companySlugs(name: string) {

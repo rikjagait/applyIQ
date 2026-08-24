@@ -11,6 +11,30 @@ import { jobs } from "@/lib/data";
 import { assessDiscoveredJob, prioritizeDiscoveredJobs } from "@/lib/job-discovery/prioritize";
 import { parseCompanyDirectory, rankCompanyMatches } from "@/lib/job-discovery/stapply";
 import { encouragementForDate, greetingForHour } from "@/lib/daily-welcome";
+import { extractResumeEvidence } from "@/lib/resume-evidence";
+
+describe("résumé evidence import", () => {
+  it("preserves exact résumé wording and classifies measurable evidence", () => {
+    const source = [
+      "Led a cross-functional learning team and improved program engagement by 35%.",
+      "Managed stakeholder partnerships across regional learning programs and workshops.",
+      "Short heading",
+    ].join("\n");
+    const evidence = extractResumeEvidence(source);
+    expect(evidence).toHaveLength(2);
+    expect(evidence[0]).toMatchObject({
+      content:
+        "Led a cross-functional learning team and improved program engagement by 35%.",
+      type: "Achievement",
+    });
+    expect(evidence[0].tags).toEqual(
+      expect.arrayContaining(["leadership", "learning", "programs"]),
+    );
+    expect(evidence[1].content).toBe(
+      "Managed stakeholder partnerships across regional learning programs and workshops.",
+    );
+  });
+});
 
 describe("daily welcome",()=>{it("uses the visitor's local hour for the greeting",()=>{expect(greetingForHour(8)).toBe("Good morning");expect(greetingForHour(14)).toBe("Good afternoon");expect(greetingForHour(20)).toBe("Good evening")});it("keeps one encouragement for the entire local day",()=>{expect(encouragementForDate(new Date(2026,7,23,1))).toBe(encouragementForDate(new Date(2026,7,23,23)));expect(encouragementForDate(new Date(2026,7,23))).not.toBe(encouragementForDate(new Date(2026,7,24)))});});
 

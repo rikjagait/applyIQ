@@ -11,12 +11,23 @@ import {
 import type { DiscoveredJob } from "@/lib/job-discovery/ats";
 import type { JobFeed } from "@/lib/repositories/job-feeds";
 
+function dailyInbox(items: DiscoveredJob[]) {
+  return [...items]
+    .sort(
+      (a, b) =>
+        (b.matchScore ?? 0) - (a.matchScore ?? 0) ||
+        (b.postedAt ? Date.parse(b.postedAt) : 0) -
+          (a.postedAt ? Date.parse(a.postedAt) : 0),
+    )
+    .slice(0, 10);
+}
+
 export function JobDiscovery({ initialFeeds }: { initialFeeds: JobFeed[] }) {
   const hasInitialJobs = initialFeeds.some(
     (feed) => (feed.lastSnapshot?.length || 0) > 0,
   );
   const [jobs, setJobs] = useState<DiscoveredJob[]>(() =>
-    initialFeeds.flatMap((feed) => feed.lastSnapshot || []),
+    dailyInbox(initialFeeds.flatMap((feed) => feed.lastSnapshot || [])),
   );
   const [feeds, setFeeds] = useState(initialFeeds);
   const [lastSearch, setLastSearch] = useState<{
@@ -58,7 +69,7 @@ export function JobDiscovery({ initialFeeds }: { initialFeeds: JobFeed[] }) {
       return;
     }
     setLastSearch({ name, boardUrl: result.boardUrl || boardUrl });
-    setJobs(result.jobs || []);
+    setJobs(dailyInbox(result.jobs || []));
     const freshness = result.directoryUpdatedAt
       ? ` Directory refreshed ${new Date(result.directoryUpdatedAt).toLocaleDateString()}.`
       : "";
@@ -125,13 +136,7 @@ export function JobDiscovery({ initialFeeds }: { initialFeeds: JobFeed[] }) {
     const unique = new Map<string, DiscoveredJob>();
     for (const job of result.results?.flatMap((item) => item.jobs) || [])
       unique.set(`${job.provider}:${job.externalId}`, job);
-    setJobs(
-      [...unique.values()].sort(
-        (a, b) =>
-          (b.postedAt ? Date.parse(b.postedAt) : 0) -
-          (a.postedAt ? Date.parse(a.postedAt) : 0),
-      ),
-    );
+    setJobs(dailyInbox([...unique.values()]));
     setMessage(
       `Scanned ${result.scanned || 0} published jobs across ${result.feeds || 0} feeds and shortlisted ${result.jobs || 0} relevant candidates.`,
     );
@@ -311,13 +316,20 @@ export function JobDiscovery({ initialFeeds }: { initialFeeds: JobFeed[] }) {
               )}
           </div>
           <div className="stack" style={{ gap: 10 }}>
-            {jobs.map((job) => (
+            {jobs.map((job, index) => (
               <article
                 className="card opportunity"
                 key={`${job.provider}-${job.externalId}`}
               >
                 <div>
                   <div className="actions" style={{ marginBottom: 8 }}>
+                    <span className="pill">
+                      {index === 0
+                        ? "Best match today"
+                        : job.isNew
+                          ? "New today"
+                          : "Résumé matched"}
+                    </span>
                     <span className="pill">
                       Recommended · {job.matchScore ?? "—"}
                     </span>
@@ -335,6 +347,11 @@ export function JobDiscovery({ initialFeeds }: { initialFeeds: JobFeed[] }) {
                       {job.employmentType || "Employment type not published"}
                     </span>
                     <span>Source: Stapply / {job.provider}</span>
+                    <span>
+                      {job.description && job.description.length >= 200
+                        ? "Full specification reviewed"
+                        : "Preliminary match · specification incomplete"}
+                    </span>
                   </div>
                   <p className="job-reason">{job.matchReason}</p>
                   <div className="job-meta">

@@ -3,6 +3,7 @@ import mammoth from "mammoth";
 import { requireUser } from "@/lib/supabase/server";
 import { resumeUploadSchema } from "@/lib/validation";
 import { analyzeDeterministically } from "@/lib/ai/job-analysis";
+import { extractResumeEvidence } from "@/lib/resume-evidence";
 
 export const runtime = "nodejs";
 const DOCX =
@@ -84,6 +85,49 @@ export async function POST(request: Request) {
           "Original text extracted from user-uploaded master résumé.",
       });
     if (versionError) throw versionError;
+    const { data: oldImportedPositions } = await supabase
+      .from("career_positions")
+      .select("id")
+      .eq("profile_id", profile.id)
+      .eq("employer", "Master résumé evidence");
+    if (oldImportedPositions?.length)
+      await supabase
+        .from("career_positions")
+        .delete()
+        .in(
+          "id",
+          oldImportedPositions.map((item) => item.id),
+        );
+    const { data: evidencePosition, error: evidencePositionError } =
+      await supabase
+        .from("career_positions")
+        .insert({
+          profile_id: profile.id,
+          employer: "Master résumé evidence",
+          title: file.name,
+          description:
+            "Exact evidence imported from the current private master résumé.",
+          sort_order: -1,
+        })
+        .select("id")
+        .single();
+    if (evidencePositionError) throw evidencePositionError;
+    const evidence = extractResumeEvidence(content);
+    if (evidence.length) {
+      const { error: evidenceError } = await supabase
+        .from("career_experiences")
+        .insert(
+          evidence.map((item) => ({
+            position_id: evidencePosition.id,
+            experience_type: item.type,
+            content: item.content,
+            source_reference: `Master résumé: ${file.name}`,
+            verified: true,
+            metadata: { tags: item.tags, importedFromResumeId: resume.id },
+          })),
+        );
+      if (evidenceError) throw evidenceError;
+    }
     await supabase
       .from("job_feeds")
       .update({ last_snapshot: [], last_job_count: 0, last_checked_at: null })
@@ -121,16 +165,14 @@ export async function POST(request: Request) {
         .eq("job_id", job.id)
         .eq("profile_id", profile.id);
       await supabase.from("job_requirements").delete().eq("job_id", job.id);
-      await supabase
-        .from("job_requirements")
-        .insert(
-          analysis.requirements.map((item, index) => ({
-            job_id: job.id,
-            requirement: item.requirement,
-            importance: item.importance.toLowerCase(),
-            sort_order: index,
-          })),
-        );
+      await supabase.from("job_requirements").insert(
+        analysis.requirements.map((item, index) => ({
+          job_id: job.id,
+          requirement: item.requirement,
+          importance: item.importance.toLowerCase(),
+          sort_order: index,
+        })),
+      );
     }
     return NextResponse.json({
       ok: true,
