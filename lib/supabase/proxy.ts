@@ -1,9 +1,20 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseConfig } from "@/lib/supabase/config";
-import { PREVIEW_COOKIE } from "@/lib/preview";
+import { PREVIEW_COOKIE, publicDemoEnabled } from "@/lib/preview";
 
 export async function refreshSession(request: NextRequest) {
+  if (publicDemoEnabled()) {
+    const response = NextResponse.next({ request });
+    response.cookies.set(PREVIEW_COOKIE, "1", {
+      httpOnly: false,
+      sameSite: "lax",
+      secure: true,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return response;
+  }
   if (process.env.NODE_ENV === "development" && request.cookies.get(PREVIEW_COOKIE)?.value === "1") return NextResponse.next({request});
   let response = NextResponse.next({ request });
   const { url, key } = supabaseConfig();
