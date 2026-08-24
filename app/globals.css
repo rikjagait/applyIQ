@@ -251,6 +251,7 @@ td { padding-top:16px;padding-bottom:16px; }
 .probability strong { font-size:30px; font-weight:300; letter-spacing:-.04em; }
 .estimate-note { margin:13px 0 0; color:var(--muted); font-size:10px; line-height:1.45; text-align:left; }
 .decision-panel { margin:24px -22px -22px; padding:22px; border-top:1px solid var(--ink); background:#f0f4f1; display:flex; align-items:center; justify-content:space-between; gap:20px; border-radius:0 0 21px 21px; }
+.decision-panel-top { margin:18px -22px 22px; border-top:1px solid var(--ink); border-bottom:1px solid var(--ink); border-radius:0; }
 .decision-panel h3 { font-size:16px; font-weight:500; }
 .decision-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
 .company-search-card { padding:28px; }
@@ -318,6 +319,18 @@ td { padding-top:16px;padding-bottom:16px; }
 .primary-step { border-color:var(--ink); background:var(--ink); color:#fff; }
 .disabled-step { opacity:.55; cursor:not-allowed; }
 .disabled-step:hover { transform:none; border-color:var(--line); }
+.find-job-choices { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:-10px 0 42px; }
+.find-job-choices a { min-height:116px; display:grid; grid-template-columns:auto 1fr; align-content:start; gap:9px 12px; padding:20px; border:1px solid var(--line); border-radius:20px; background:#fff; transition:transform .15s ease,border-color .15s ease; }
+.find-job-choices a:hover { transform:translateY(-2px); border-color:var(--ink); }
+.find-job-choices a>span { width:25px; height:25px; display:grid; place-items:center; border:1px solid var(--ink); border-radius:50%; font-size:9px; }
+.find-job-choices a strong,.find-job-choices a small { grid-column:1/-1; }
+.find-job-choices a strong { font-size:12px; letter-spacing:.06em; text-transform:uppercase; }
+.find-job-choices a small { color:var(--muted); }
+.find-today-list { max-width:1100px; }
+.find-method { padding-top:34px; border-top:1px solid var(--ink); scroll-margin-top:90px; }
+.paste-job-card { display:grid; grid-template-columns:minmax(240px,.75fr) minmax(380px,1.25fr); align-items:center; gap:28px; border-color:var(--ink); scroll-margin-top:90px; }
+.paste-job-card form { display:flex; gap:8px; }
+.paste-job-card .input { flex:1; min-width:0; }
 @media (max-width:620px){.daily-summary{grid-template-columns:1fr}.daily-summary div{border-right:0;border-bottom:1px solid var(--line)}.daily-summary div:last-child{border-bottom:0}}
-@media (max-width:900px){.top-application-actions{grid-template-columns:1fr}.top-application-buttons{grid-template-columns:repeat(2,1fr)}.continuation-actions{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:620px){.top-application-buttons{grid-template-columns:1fr}.job-source-strip{align-items:flex-start;flex-direction:column}.continuation-actions{grid-template-columns:1fr}}
+@media (max-width:900px){.top-application-actions{grid-template-columns:1fr}.top-application-buttons{grid-template-columns:repeat(2,1fr)}.continuation-actions{grid-template-columns:repeat(2,1fr)}.paste-job-card{grid-template-columns:1fr}}
+@media (max-width:620px){.top-application-buttons{grid-template-columns:1fr}.job-source-strip{align-items:flex-start;flex-direction:column}.continuation-actions{grid-template-columns:1fr}.find-job-choices{grid-template-columns:1fr}.paste-job-card form{flex-direction:column}}

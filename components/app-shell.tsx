@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, BarChart3, BriefcaseBusiness, Building2, CalendarClock, ContactRound, FileText, Gauge, Home, Library, ListChecks, Search, Settings, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, BriefcaseBusiness, Building2, CalendarClock, ContactRound, FileText, Gauge, Home, Library, ListChecks, Search, Settings } from "lucide-react";
 import { AuthInviteBridge } from "@/components/auth-invite-bridge";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -12,7 +12,7 @@ const primaryLinks = [
   ["Applications", "/pipeline", Gauge], ["Outreach", "/contacts", ContactRound], ["Interviews", "/interviews", Building2],
 ] as const;
 const toolLinks = [
-  ["Today's matches", "/jobs/today", Sparkles], ["Application tracker", "/applications", ListChecks], ["Follow-ups", "/follow-ups", CalendarClock],
+  ["Application tracker", "/applications", ListChecks], ["Follow-ups", "/follow-ups", CalendarClock],
   ["Résumé", "/resumes", FileText], ["Career profile", "/experience", Library], ["Insights", "/insights", BarChart3], ["Settings", "/settings", Settings],
 ] as const;
 const links=[...primaryLinks,...toolLinks];

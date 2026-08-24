@@ -1,0 +1,7 @@
+import { getJob } from "@/lib/repositories/jobs";
+import { listCareerEvidence } from "@/lib/repositories/career-truth";
+import { buildApplicationStudio } from "@/lib/application-studio";
+import { createResumePdf } from "@/lib/resume-pdf";
+
+export const runtime="nodejs";
+export async function POST(request:Request,{params}:{params:Promise<{jobId:string}>}){try{const {jobId}=await params;const job=await getJob(jobId);if(!job)return Response.json({error:"Job not found"},{status:404});const payload=await request.json().catch(()=>({})) as {acceptedChanges?:unknown};const acceptedChanges=payload.acceptedChanges&&typeof payload.acceptedChanges==="object"?Object.fromEntries(Object.entries(payload.acceptedChanges).filter((entry):entry is [string,string]=>typeof entry[1]==="string"&&entry[1].trim().length>0)):{};const [evidence]=await Promise.all([listCareerEvidence()]);const studio=buildApplicationStudio(job);const pdf=await createResumePdf({company:job.company,role:job.title,summary:studio.summary,skills:studio.skills,evidence,acceptedChanges,changeSources:studio.changes});const filename=`${job.company.replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()}-tailored-resume.pdf`;return new Response(new Uint8Array(pdf),{headers:{"content-type":"application/pdf","content-disposition":`attachment; filename="${filename}"`,"cache-control":"no-store"}})}catch(error){console.error("Resume PDF generation failed",error);return Response.json({error:"The PDF résumé could not be generated."},{status:500})}}

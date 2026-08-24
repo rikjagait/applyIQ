@@ -20,12 +20,14 @@
     "mammoth": "^1.9.0",
     "next": "latest",
     "pdf-parse": "^2.4.5",
+    "pdfkit": "^0.20.1",
     "react": "latest",
     "react-dom": "latest",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
+    "@types/pdfkit": "^0.17.6",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "eslint": "^9.22.0",
