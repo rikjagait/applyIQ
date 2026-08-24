@@ -1,0 +1,2 @@
+import { downloadMasterResume } from "@/lib/repositories/resumes";
+export async function GET(){try{const {master,buffer}=await downloadMasterResume();return new Response(new Uint8Array(buffer),{headers:{"content-type":master.mimeType,"content-disposition":`attachment; filename="${master.name.replace(/["\r\n]/g,"")}"`,"cache-control":"private, no-store"}})}catch{return Response.json({error:"Master résumé not found."},{status:404})}}

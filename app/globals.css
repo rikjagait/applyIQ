@@ -331,6 +331,15 @@ td { padding-top:16px;padding-bottom:16px; }
 .paste-job-card { display:grid; grid-template-columns:minmax(240px,.75fr) minmax(380px,1.25fr); align-items:center; gap:28px; border-color:var(--ink); scroll-margin-top:90px; }
 .paste-job-card form { display:flex; gap:8px; }
 .paste-job-card .input { flex:1; min-width:0; }
+.private-empty-jobs { align-items:flex-start; text-align:left; }
+.linkedin-source { padding-top:34px; border-top:1px solid var(--ink); scroll-margin-top:90px; }
+.linkedin-searches { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.linkedin-searches .card { min-height:150px; display:flex; align-items:flex-start; flex-direction:column; gap:11px; transition:transform .15s ease,border-color .15s ease; }
+.linkedin-searches .card:hover { transform:translateY(-2px); border-color:var(--ink); }
+.linkedin-searches strong { font-size:16px; font-weight:500; }
+.linkedin-searches small { color:var(--muted); }
+.linkedin-searches .card>span:last-child { display:flex; align-items:center; gap:6px; margin-top:auto; color:var(--green); font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; }
+.linkedin-note { margin-top:12px; }
 @media (max-width:620px){.daily-summary{grid-template-columns:1fr}.daily-summary div{border-right:0;border-bottom:1px solid var(--line)}.daily-summary div:last-child{border-bottom:0}}
-@media (max-width:900px){.top-application-actions{grid-template-columns:1fr}.top-application-buttons{grid-template-columns:repeat(2,1fr)}.continuation-actions{grid-template-columns:repeat(2,1fr)}.paste-job-card{grid-template-columns:1fr}}
-@media (max-width:620px){.top-application-buttons{grid-template-columns:1fr}.job-source-strip{align-items:flex-start;flex-direction:column}.continuation-actions{grid-template-columns:1fr}.find-job-choices{grid-template-columns:1fr}.paste-job-card form{flex-direction:column}}
+@media (max-width:900px){.top-application-actions{grid-template-columns:1fr}.top-application-buttons{grid-template-columns:repeat(2,1fr)}.continuation-actions{grid-template-columns:repeat(2,1fr)}.paste-job-card{grid-template-columns:1fr}.linkedin-searches{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:620px){.top-application-buttons{grid-template-columns:1fr}.job-source-strip{align-items:flex-start;flex-direction:column}.continuation-actions{grid-template-columns:1fr}.find-job-choices{grid-template-columns:1fr}.paste-job-card form{flex-direction:column}.linkedin-searches{grid-template-columns:1fr}}
