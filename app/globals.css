@@ -780,6 +780,17 @@ textarea.input {
   opacity: 0.55;
   cursor: wait;
 }
+.watchlist-panel { padding:0; overflow:hidden; }
+.watchlist-summary { display:flex; align-items:center; gap:11px; padding:16px 18px; cursor:pointer; list-style:none; }
+.watchlist-summary::-webkit-details-marker { display:none; }
+.watchlist-summary-icon { display:grid; place-items:center; width:32px; height:32px; border-radius:50%; background:var(--mint); color:var(--green); }
+.watchlist-summary>span:nth-child(2) { display:flex; flex:1; flex-direction:column; gap:2px; }
+.watchlist-summary strong { font-size:14px; }
+.watchlist-summary small { color:var(--muted); font-size:11px; }
+.watchlist-manage { display:flex; align-items:center; gap:6px; color:var(--green); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+.watchlist-panel[open] .watchlist-manage svg { transform:rotate(180deg); }
+.watchlist-content { padding:0 18px 18px; border-top:1px solid var(--line); }
+.watchlist-content .section-head { margin:14px 0 10px; }
 .prep-question + .prep-question {
   border-top: 1px solid var(--line);
   margin-top: 15px;

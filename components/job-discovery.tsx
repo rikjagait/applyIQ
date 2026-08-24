@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, RefreshCw, Rss, Search, Trash2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  ChevronDown,
+  RefreshCw,
+  Rss,
+  Search,
+  Trash2,
+} from "lucide-react";
 import type { DiscoveredJob } from "@/lib/job-discovery/ats";
 import type { JobFeed } from "@/lib/repositories/job-feeds";
 
@@ -160,65 +167,79 @@ export function JobDiscovery({ initialFeeds }: { initialFeeds: JobFeed[] }) {
   }, [feeds.length, hasInitialJobs]);
   return (
     <div className="stack">
-      <section className="card">
-        <div className="section-head">
-          <div>
-            <h2>Proactive company watchlist</h2>
+      <details className="card watchlist-panel">
+        <summary className="watchlist-summary">
+          <span className="watchlist-summary-icon">
+            <Rss size={15} />
+          </span>
+          <span>
+            <strong>Proactive company watchlist</strong>
+            <small>
+              {feeds.length} {feeds.length === 1 ? "company" : "companies"}{" "}
+              monitored automatically
+            </small>
+          </span>
+          <span className="watchlist-manage">
+            Manage watchlist <ChevronDown size={14} />
+          </span>
+        </summary>
+        <div className="watchlist-content">
+          <div className="section-head">
             <p className="subtle">
-              ApplyIQ checks these employers automatically and brings the
-              strongest current roles into this page.
+              Add or remove employers here. ApplyIQ checks them automatically
+              and places matching roles above.
             </p>
+            <button
+              className="btn"
+              onClick={refreshAll}
+              disabled={pending || !feeds.length}
+            >
+              <RefreshCw size={14} />
+              {pending ? "Checking live roles…" : "Refresh opportunities"}
+            </button>
           </div>
-          <button
-            className="btn"
-            onClick={refreshAll}
-            disabled={pending || !feeds.length}
-          >
-            <RefreshCw size={14} />
-            {pending ? "Checking live roles…" : "Refresh opportunities"}
-          </button>
+          <div className="feed-list">
+            {feeds.map((feed) => (
+              <div className="feed-chip" key={feed.id}>
+                <Rss size={14} />
+                <span>
+                  <strong>{feed.name}</strong>
+                  <small>
+                    {feed.provider} · {feed.lastJobCount} last found
+                  </small>
+                </span>
+                <button
+                  className={
+                    confirmRemoveId === feed.id
+                      ? "feed-remove confirming"
+                      : "feed-remove"
+                  }
+                  type="button"
+                  aria-label={
+                    confirmRemoveId === feed.id
+                      ? `Confirm removal of ${feed.name}`
+                      : `Remove ${feed.name} from watchlist`
+                  }
+                  disabled={removingFeedId === feed.id}
+                  onClick={() => void removeFeed(feed)}
+                >
+                  <Trash2 size={13} />
+                  {removingFeedId === feed.id
+                    ? "Removing…"
+                    : confirmRemoveId === feed.id
+                      ? "Confirm"
+                      : "Remove"}
+                </button>
+              </div>
+            ))}
+            {!feeds.length && (
+              <p className="subtle">
+                Search for a company below, then add it to Neelam’s watchlist.
+              </p>
+            )}
+          </div>
         </div>
-        <div className="feed-list">
-          {feeds.map((feed) => (
-            <div className="feed-chip" key={feed.id}>
-              <Rss size={14} />
-              <span>
-                <strong>{feed.name}</strong>
-                <small>
-                  {feed.provider} · {feed.lastJobCount} last found
-                </small>
-              </span>
-              <button
-                className={
-                  confirmRemoveId === feed.id
-                    ? "feed-remove confirming"
-                    : "feed-remove"
-                }
-                type="button"
-                aria-label={
-                  confirmRemoveId === feed.id
-                    ? `Confirm removal of ${feed.name}`
-                    : `Remove ${feed.name} from watchlist`
-                }
-                disabled={removingFeedId === feed.id}
-                onClick={() => void removeFeed(feed)}
-              >
-                <Trash2 size={13} />
-                {removingFeedId === feed.id
-                  ? "Removing…"
-                  : confirmRemoveId === feed.id
-                    ? "Confirm"
-                    : "Remove"}
-              </button>
-            </div>
-          ))}
-          {!feeds.length && (
-            <p className="subtle">
-              Search for a company below, then add it to Neelam’s watchlist.
-            </p>
-          )}
-        </div>
-      </section>
+      </details>
       <section className="card company-search-card">
         <form className="form" onSubmit={submit}>
           <label className="field">
