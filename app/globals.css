@@ -1957,6 +1957,7 @@ select.input {
   flex: 1;
   min-width: 0;
 }
+.url-first-card{margin-bottom:0}.url-first-card form{align-items:center}.url-first-card .btn{flex:0 0 auto;white-space:nowrap}.guided-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.guided-flow article{position:relative;min-height:150px}.guided-flow article>span{position:absolute;right:20px;top:20px;width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--ink);border-radius:50%;font-size:11px}.guided-flow h3{margin-top:28px}.guided-flow p{color:var(--muted);margin-bottom:0}.job-table-search{display:flex;align-items:center;gap:10px;padding:0 18px;margin-bottom:16px;height:50px;border:1px solid var(--line);border-radius:999px;background:#fff}.job-table-search input{width:100%;border:0;outline:0;background:transparent;font:inherit}.jobs-master-table table{table-layout:fixed}.jobs-master-table th:nth-child(1){width:34%}.jobs-master-table th:nth-child(2){width:16%}.jobs-master-table th:nth-child(3){width:19%}.jobs-master-table th:nth-child(4){width:17%}.jobs-master-table th:nth-child(5){width:14%}.jobs-master-table td small{display:block;color:var(--muted);margin-top:5px}.job-score{display:block;color:var(--green);margin-bottom:7px}.compact-select{width:100%;min-height:36px;padding:6px 28px 6px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font:inherit;font-size:12px}.compact-actions{display:flex;flex-wrap:wrap;gap:6px}.mini-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:32px;padding:5px 10px;border:1px solid var(--ink);border-radius:999px;background:transparent;font-size:11px;font-weight:700;white-space:nowrap}.mini-btn.danger{color:var(--danger);border-color:var(--danger)}
 .private-empty-jobs {
   align-items: flex-start;
   text-align: left;
@@ -2062,3 +2063,4 @@ select.input {
 .outreach-workflow small { color:var(--muted); font-size:10px; }
 @media (max-width:900px){.outreach-workflow{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:520px){.outreach-workflow{grid-template-columns:1fr}}
+@media (max-width:900px){.guided-flow{grid-template-columns:1fr}.url-first-card form{align-items:stretch}.url-first-card .btn{width:100%}}
