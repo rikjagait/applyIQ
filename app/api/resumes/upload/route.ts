@@ -170,6 +170,11 @@ export async function POST(request: Request) {
           job_id: job.id,
           requirement: item.requirement,
           importance: item.importance.toLowerCase(),
+          category: item.category,
+          source_quote: item.sourceQuote,
+          evidence: item.evidence,
+          strength: item.strength,
+          gap: item.gap,
           sort_order: index,
         })),
       );

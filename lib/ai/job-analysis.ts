@@ -6,6 +6,8 @@ import { calculateMatchScore, matchCategory } from "@/lib/scoring";
 const requirementSchema = z.object({
   requirement: z.string().min(2),
   importance: z.enum(["Required", "Preferred"]),
+  category: z.enum(["Experience", "Skill", "Education", "Tool", "Leadership", "Certification"]),
+  sourceQuote: z.string().min(2),
   evidence: z.string(),
   strength: z.enum(["Strong", "Moderate", "None"]),
   gap: z.string(),
@@ -19,7 +21,7 @@ export const jobAnalysisSchema = z.object({
   employmentType: z.enum(["Full-time", "Part-time"]),
   roleFamily: z.string().min(2),
   industry: z.string().min(2),
-  requirements: z.array(requirementSchema).min(1).max(20),
+  requirements: z.array(requirementSchema).min(1).max(15),
   strengths: z.array(z.string()).max(8),
   gaps: z.array(z.string()).max(8),
   strategy: z.string().min(20),
@@ -70,13 +72,22 @@ function findRequirements(description: string, truth: string) {
     truth.toLowerCase().match(/[a-z][a-z-]{3,}/g) ?? [],
   );
   const lines = description
+    .replace(/([.!?])(?=[A-Z])/g, "$1\n")
     .split(/\n|(?<=[.;])\s+/)
     .map((s) => s.replace(/^[-•*]\s*/, "").trim())
     .filter((s) => s.length > 18);
-  const signal =
-    /required|preferred|must|experience|ability|skill|responsib|qualification|proficien|knowledge/i;
+  const signal = /\b(must|require[ds]?|requirements?|qualifications?|you (?:have|bring|are)|ideal candidate|minimum of|at least \d+ years?|years? of experience|proficien(?:t|cy)|demonstrated|track record|ability to|knowledge of|bachelor(?:'s)?|master(?:'s)?|degree|certification|preferred|nice to have|a plus)\b/i;
+  const nonRequirement = /\b(we are|our mission|our values|we value|we believe|we invest|benefits?|compensation|salary|equity|equal opportunity|diversity|diverse|inclusive culture|remote-first|what you can expect|about us|our company|our team)\b/i;
+  const category = (line: string) => {
+    if (/degree|bachelor|master/i.test(line)) return "Education" as const;
+    if (/certif/i.test(line)) return "Certification" as const;
+    if (/software|platform|tool|salesforce|hubspot|tableau|jira|asana/i.test(line)) return "Tool" as const;
+    if (/lead|manage|mentor|team/i.test(line)) return "Leadership" as const;
+    if (/years? of experience|track record|demonstrated experience/i.test(line)) return "Experience" as const;
+    return "Skill" as const;
+  };
   return lines
-    .filter((l) => signal.test(l))
+    .filter((l) => signal.test(l) && !nonRequirement.test(l))
     .slice(0, 12)
     .map((line) => {
       const words = line.toLowerCase().match(/[a-z][a-z-]{3,}/g) ?? [];
@@ -88,6 +99,8 @@ function findRequirements(description: string, truth: string) {
         hits.length >= 3 ? "Strong" : hits.length ? "Moderate" : "None";
       return {
         requirement: line.slice(0, 240),
+        sourceQuote: line.slice(0, 400),
+        category: category(line),
         importance: /preferred|nice to have|plus/i.test(line)
           ? ("Preferred" as const)
           : ("Required" as const),
@@ -198,6 +211,8 @@ export function analyzeDeterministically(
           {
             requirement: "Complete role requirements",
             importance: "Required",
+            category: "Skill",
+            sourceQuote: "No explicit candidate qualifications were detected in the supplied posting.",
             evidence: "Insufficient structured requirements detected",
             strength: "None",
             gap: "Review the pasted description",
@@ -250,11 +265,13 @@ const jsonSchema = {
         properties: {
           requirement: { type: "string" },
           importance: { type: "string", enum: ["Required", "Preferred"] },
+          category: { type: "string", enum: ["Experience", "Skill", "Education", "Tool", "Leadership", "Certification"] },
+          sourceQuote: { type: "string" },
           evidence: { type: "string" },
           strength: { type: "string", enum: ["Strong", "Moderate", "None"] },
           gap: { type: "string" },
         },
-        required: ["requirement", "importance", "evidence", "strength", "gap"],
+        required: ["requirement", "importance", "category", "sourceQuote", "evidence", "strength", "gap"],
       },
     },
     strengths: { type: "array", items: { type: "string" } },
@@ -298,7 +315,7 @@ async function analyzeWithOpenAI(
       model: process.env.OPENAI_MODEL || "gpt-5-mini",
       store: false,
       instructions:
-        "Analyze a vacancy against the supplied verified Career Truth. Optimize framing, never facts. Surface missing evidence honestly. Return concise evidence strings copied or closely paraphrased only from Career Truth.",
+        "Act as an evidence-based recruiter. Extract only explicit candidate qualifications: experience, skills, education, credentials, tools, or leadership capability. Never treat company descriptions, mission, values, culture, benefits, compensation, EEO language, location/remote policy, or ordinary role duties as candidate requirements. Include a duty only when the posting explicitly frames it as a required or preferred candidate capability. If uncertain, omit it. Mark Required only when the posting says must, required, need, minimum, or equivalent; mark Preferred only for preferred, ideally, nice-to-have, or plus. Every requirement must include a short exact contiguous sourceQuote from the vacancy. Match evidence only against Career Truth; never invent or infer unsupported claims. Keep requirements concise and non-duplicative.",
       input: `CAREER TRUTH:\n${truth}\n\nVACANCY:\nTitle: ${input.title}\nCompany: ${input.company}\nLocation: ${input.location}\n${input.description}`,
       text: {
         format: {
@@ -331,12 +348,20 @@ export async function analyzeJob(
   if (!process.env.OPENAI_API_KEY) return base;
   try {
     const parsed = await analyzeWithOpenAI(input, resumeText);
+    const weighted = parsed.requirements.reduce((total, item) => {
+      const weight = item.importance === "Required" ? 2 : 1;
+      const value = item.strength === "Strong" ? 1 : item.strength === "Moderate" ? 0.5 : 0;
+      return { earned: total.earned + weight * value, possible: total.possible + weight };
+    }, { earned: 0, possible: 0 });
+    const requirementFit = weighted.possible ? weighted.earned / weighted.possible : base.factorScores.requiredSkills;
+    const factorScores = { ...base.factorScores, requiredSkills: requirementFit, preferredSkills: requirementFit };
+    const score = calculateMatchScore(factorScores);
     return {
       ...parsed,
-      score: base.score,
-      category: base.category,
-      probability: base.probability,
-      factorScores: base.factorScores,
+      score,
+      category: matchCategory(score),
+      probability: Math.max(3, Math.round((score - 45) * 0.55)),
+      factorScores,
       provider: "openai",
     };
   } catch (error) {

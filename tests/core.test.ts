@@ -74,6 +74,12 @@ describe("job analysis", () => {
     expect(aligned.requirements.some(item => item.evidence.includes("Learning program manager"))).toBe(true);
     expect(unrelated.requirements.some(item => item.evidence.includes("No evidence identified"))).toBe(true);
   });
+  it("excludes company marketing, culture and benefits from candidate requirements", () => {
+    const result = analyzeDeterministically({ title:"Social Media Manager", company:"Example", location:"Remote", description:"We predict market movements that help investors make decisions. We value transparency and an inclusive culture. We invest in our team with competitive compensation and equity. The ideal candidate has 5 years of experience building social media strategy and must be proficient with analytics tools." }, "Led social media strategy and analytics reporting for national campaigns.");
+    expect(result.requirements).toHaveLength(1);
+    expect(result.requirements[0].sourceQuote).toContain("ideal candidate");
+    expect(result.requirements.some(item => /inclusive|compensation|investors/i.test(item.requirement))).toBe(false);
+  });
 });
 describe("URL job ingestion", () => {
   it("extracts a schema.org JobPosting", () => {

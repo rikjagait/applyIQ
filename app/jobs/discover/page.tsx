@@ -87,7 +87,7 @@ export default async function DiscoverJobsPage() {
               key={`${job.provider}-${job.externalId}`}
             >
               <div>
-                <span className="pill">New today · {job.matchScore}</span>
+                <span className="pill">{job.aiAssessed ? "AI recommended" : "Recommended"} · {job.matchScore}</span>
                 <h3>{job.title}</h3>
                 <div className="job-company">
                   {job.company} · {job.location}

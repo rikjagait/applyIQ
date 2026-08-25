@@ -17,6 +17,8 @@ export type DiscoveredJob = {
   salary?: string;
   matchScore?: number;
   matchReason?: string;
+  aiAssessed?: boolean;
+  aiRecommended?: boolean;
   isNew?: boolean;
   lastVerifiedAt?: string;
 };

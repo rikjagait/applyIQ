@@ -24,7 +24,7 @@ export interface Job {
   summary: string;
   strengths: string[];
   gaps: string[];
-  requirements: Array<{ requirement: string; importance: "Required" | "Preferred"; evidence: string; strength: "Strong" | "Moderate" | "None"; gap: string }>;
+  requirements: Array<{ requirement: string; importance: "Required" | "Preferred"; category?: string; sourceQuote?: string; evidence: string; strength: "Strong" | "Moderate" | "None"; gap: string }>;
   status: ApplicationStage;
   saved?: boolean;
 }

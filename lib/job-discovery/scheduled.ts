@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { discoverAtsJobs, type DiscoveredJob } from "@/lib/job-discovery/ats";
 import { prioritizeDiscoveredJobs } from "@/lib/job-discovery/prioritize";
 import { defaultJobPreferences } from "@/lib/repositories/preferences";
+import { rerankProactiveJobs } from "@/lib/ai/discovery-ranking";
 
 export async function refreshAllScheduledFeeds() {
   const supabase = createSupabaseAdminClient();
@@ -46,12 +47,13 @@ export async function refreshAllScheduledFeeds() {
           ),
         );
         const now = new Date().toISOString();
-        const jobs = prioritizeDiscoveredJobs(
+        const initialJobs = prioritizeDiscoveredJobs(
           all,
-          50,
+          20,
           preferences,
           resumeText,
-        ).map((job) => ({
+        );
+        const jobs = (await rerankProactiveJobs(initialJobs, resumeText)).map((job) => ({
           ...job,
           isNew: !previous.has(`${job.provider}:${job.externalId}`),
           lastVerifiedAt: now,

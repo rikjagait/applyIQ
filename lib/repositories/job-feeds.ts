@@ -6,6 +6,7 @@ import { discoverAtsJobs, type DiscoveredJob } from "@/lib/job-discovery/ats";
 import { prioritizeDiscoveredJobs } from "@/lib/job-discovery/prioritize";
 import { getJobPreferences } from "@/lib/repositories/preferences";
 import { getLatestResumeText } from "@/lib/repositories/resumes";
+import { rerankProactiveJobs } from "@/lib/ai/discovery-ranking";
 
 export type JobFeed = {
   id: string;
@@ -136,12 +137,13 @@ export async function refreshJobFeeds(): Promise<{
               (job) => `${job.provider}:${job.externalId}`,
             ),
           );
-          const jobs = prioritizeDiscoveredJobs(
+          const initialJobs = prioritizeDiscoveredJobs(
             allJobs,
-            50,
+            20,
             preferences,
             resumeText ?? undefined,
-          ).map((job) => ({
+          );
+          const jobs = (await rerankProactiveJobs(initialJobs, resumeText ?? undefined)).map((job) => ({
             ...job,
             isNew: !previous.has(`${job.provider}:${job.externalId}`),
             lastVerifiedAt: verifiedAt,
