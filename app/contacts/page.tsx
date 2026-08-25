@@ -5,6 +5,7 @@ import { CopyMessage } from "@/components/copy-message";
 import Link from "next/link";
 import { ContactCapture } from "@/components/contact-capture";
 import { listContactsForJob } from "@/lib/repositories/contacts";
+import { getOutreachPlan } from "@/lib/ai/outreach-generation";
 
 function linkedInSearch(query: string) {
   return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(query)}`;
@@ -39,7 +40,7 @@ export default async function ContactsPage({
         </div>
       </div>
     );
-  const contacts = await listContactsForJob(job.id);
+  const [contacts,plan] = await Promise.all([listContactsForJob(job.id),getOutreachPlan(job)]);
   const searches = [
     {
       label: "1 · Likely hiring manager",
@@ -60,8 +61,8 @@ export default async function ContactsPage({
   const evidence =
     job.strengths[0] ||
     `experience relevant to ${job.roleFamily.toLowerCase()}`;
-  const connection = `Hi [Name] — I’m exploring the ${job.title} opportunity at ${job.company}. My background includes ${evidence.charAt(0).toLowerCase()}${evidence.slice(1)}, and the role’s focus on ${job.roleFamily.toLowerCase()} stood out. I’d value connecting and learning more about the team.`;
-  const followup = `Hi [Name], thank you for connecting. I’m considering the ${job.title} role at ${job.company} and would appreciate your perspective on what the team values most in someone joining this function. If you have 10–15 minutes in the coming week, I’d be grateful for a brief conversation. No worries at all if timing is tight.`;
+  const connection = plan.connection || `Hi [Name] — I’m exploring the ${job.title} opportunity at ${job.company}. My background includes ${evidence.charAt(0).toLowerCase()}${evidence.slice(1)}, and I’d value connecting.`;
+  const followup = plan.followup;
   return (
     <div className="content">
       <PageHead
@@ -102,6 +103,7 @@ export default async function ContactsPage({
       </div>
       <div className="grid two-col">
         <section className="stack">
+          {plan.people.length?<section className="card"><div className="eyebrow">AI-researched public contacts</div><h2>People worth reviewing</h2><div className="stack" style={{marginTop:16}}>{plan.people.map(person=><article className="saved-contact" key={person.publicUrl}><div><strong>{person.name}</strong><span>{person.title}</span><small>{person.why}</small></div><div className="actions"><a className="btn" href={person.publicUrl} target="_blank" rel="noreferrer">Review profile</a><CopyMessage text={person.message}/></div></article>)}</div></section>:null}
           <ContactCapture jobId={job.id} initialContacts={contacts} />
           <div className="section-head">
             <h2>Who to look for</h2>

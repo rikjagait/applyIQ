@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, BarChart3, BriefcaseBusiness, Building2, CalendarClock, ContactRound, FileText, Gauge, Home, Library, ListChecks, Search, Settings } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, BriefcaseBusiness, CalendarClock, ContactRound, FileText, Gauge, Home, Library, ListChecks, PlusCircle, Settings } from "lucide-react";
 import { AuthInviteBridge } from "@/components/auth-invite-bridge";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const primaryLinks = [
-  ["Home", "/", Home], ["Find jobs", "/jobs/discover", Search], ["Review jobs", "/jobs", BriefcaseBusiness],
-  ["Applications", "/pipeline", Gauge], ["Outreach", "/contacts", ContactRound], ["Interviews", "/interviews", Building2],
+  ["Home", "/", Home], ["Add job", "/jobs/discover", PlusCircle], ["Shortlist", "/jobs", BriefcaseBusiness],
+  ["Applications", "/pipeline", Gauge], ["Interviews", "/interviews", CalendarClock],
 ] as const;
 const toolLinks = [
-  ["Application tracker", "/applications", ListChecks], ["Follow-ups", "/follow-ups", CalendarClock],
+  ["Outreach", "/contacts", ContactRound], ["Application tracker", "/applications", ListChecks], ["Follow-ups", "/follow-ups", CalendarClock],
   ["Résumé", "/resumes", FileText], ["Career profile", "/experience", Library], ["Insights", "/insights", BarChart3], ["Settings", "/settings", Settings],
 ] as const;
 const links=[...primaryLinks,...toolLinks];

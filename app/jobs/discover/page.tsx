@@ -40,29 +40,33 @@ export default async function DiscoverJobsPage() {
   return (
     <div className="content">
       <PageHead
-        eyebrow="Step 1 · One place to find work"
-        title="Find jobs"
-        copy="Start with ApplyIQ’s best opportunities, search LinkedIn, check a company, or paste a role you already found."
+        eyebrow="Step 1 · Start with a role you want"
+        title="Add and assess a job"
+        copy="Paste a job link. ApplyIQ will screen it against Neelam’s latest résumé and guide the application from start to interview."
       />
+      <section className="card paste-job-card url-first-card" id="paste-job">
+        <div><div className="eyebrow">LinkedIn or any job site</div><h2>Paste the job-posting link</h2><p className="subtle">Nothing is submitted to the employer. ApplyIQ imports the vacancy and spends AI only after Neelam chooses to assess it.</p></div>
+        <form action="/jobs/new" method="get"><input className="input" aria-label="Job posting URL" name="url" type="url" placeholder="https://www.linkedin.com/jobs/view/…" required/><button className="btn primary" type="submit">Screen this role <ArrowUpRight size={14}/></button></form>
+      </section>
       <section className="find-job-choices" aria-label="Ways to find a job">
-        <a href="#today">
+        <a href="#paste-job">
           <span>1</span>
-          <Sparkles size={18} />
-          <strong>Today’s opportunities</strong>
-          <small>Review the strongest matches first</small>
+          <Link2 size={18} />
+          <strong>Screen the role</strong>
+          <small>Job description versus latest résumé</small>
         </a>
-        <a href="#linkedin">
+        <Link href="/jobs">
           <span>2</span>
           <Search size={18} />
-          <strong>Search LinkedIn</strong>
-          <small>Open focused searches from preferences</small>
-        </a>
-        <a href="#paste-job">
+          <strong>Prepare application</strong>
+          <small>Tailor résumé and application answers</small>
+        </Link>
+        <Link href="/interviews">
           <span>3</span>
-          <Link2 size={18} />
-          <strong>Paste a job URL</strong>
-          <small>Analyze a specific vacancy</small>
-        </a>
+          <Sparkles size={18} />
+          <strong>Prepare for interview</strong>
+          <small>Research, questions and model answers</small>
+        </Link>
       </section>
       <section className="section" id="today">
         <div className="section-head">
@@ -155,29 +159,6 @@ export default async function DiscoverJobsPage() {
           Choose a LinkedIn role and paste its URL below. ApplyIQ will import
           its actual company and advertised salary rather than guessing.
         </div>
-      </section>
-      <section className="section card paste-job-card" id="paste-job">
-        <div>
-          <div className="eyebrow">LinkedIn or any job site</div>
-          <h2>Paste the job-posting link</h2>
-          <p className="subtle">
-            ApplyIQ automatically imports the details, assesses the match and
-            shows clear next actions.
-          </p>
-        </div>
-        <form action="/jobs/new" method="get">
-          <input
-            className="input"
-            aria-label="Job posting URL"
-            name="url"
-            type="url"
-            placeholder="https://www.linkedin.com/jobs/view/…"
-            required
-          />
-          <button className="btn primary" type="submit">
-            Analyze job URL <ArrowUpRight size={14} />
-          </button>
-        </form>
       </section>
     </div>
   );
