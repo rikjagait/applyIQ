@@ -18,6 +18,7 @@ export interface Job {
   postedDaysAgo: number;
   source: string;
   sourceUrl?: string;
+  description?: string;
   score: number;
   probability: number;
   category: MatchCategory;

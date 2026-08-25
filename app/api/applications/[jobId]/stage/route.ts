@@ -13,6 +13,12 @@ export async function PATCH(request:Request,{params}:{params:Promise<{jobId:stri
     const {data:application,error:readError}=await supabase.from("applications").select("id,status").eq("profile_id",profile.id).eq("job_id",jobId).single(); if(readError||!application)return NextResponse.json({error:"Application not found"},{status:404});
     const next=toDb[parsed.data]; const {error:updateError}=await supabase.from("applications").update({status:next,updated_at:new Date().toISOString()}).eq("id",application.id); if(updateError)throw updateError;
     const {error:historyError}=await supabase.from("application_stage_history").insert({application_id:application.id,from_status:application.status,to_status:next}); if(historyError)throw historyError;
-    return NextResponse.json({ok:true});
+    let interviewId:string|undefined;
+    if(parsed.data==="Interview"){
+      const {data:existing}=await supabase.from("interviews").select("id").eq("application_id",application.id).limit(1).maybeSingle();
+      if(existing?.id)interviewId=existing.id;
+      else {const {data:created,error:interviewError}=await supabase.from("interviews").insert({application_id:application.id,interview_type:"Details pending",starts_at:null,stage:"Interview"}).select("id").single();if(interviewError)throw interviewError;interviewId=created.id;}
+    }
+    return NextResponse.json({ok:true,interviewId});
   } catch(error){console.error("Stage update failed",error);return NextResponse.json({error:"Stage could not be updated"},{status:500});}
 }

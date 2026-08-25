@@ -5,7 +5,7 @@ import { CopyMessage } from "@/components/copy-message";
 import Link from "next/link";
 import { ContactCapture } from "@/components/contact-capture";
 import { listContactsForJob } from "@/lib/repositories/contacts";
-import { getOutreachPlan } from "@/lib/ai/outreach-generation";
+import { getOutreachPlan, outreachSearchTargets } from "@/lib/ai/outreach-generation";
 
 function linkedInSearch(query: string) {
   return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(query)}`;
@@ -41,23 +41,7 @@ export default async function ContactsPage({
       </div>
     );
   const [contacts,plan] = await Promise.all([listContactsForJob(job.id),getOutreachPlan(job)]);
-  const searches = [
-    {
-      label: "1 · Likely hiring manager",
-      why: "Highest-value context: look for the function leader one level above this role.",
-      query: `${job.company} director head ${job.roleFamily}`,
-    },
-    {
-      label: "2 · Recruiting partner",
-      why: "Likely to understand ownership, timing and the hiring process.",
-      query: `${job.company} recruiter talent acquisition ${job.roleFamily}`,
-    },
-    {
-      label: "3 · Potential team leader or peer",
-      why: "Useful for practical insight into priorities, culture and day-to-day work.",
-      query: `${job.company} ${job.title}`,
-    },
-  ];
+  const searches = outreachSearchTargets(job);
   const evidence =
     job.strengths[0] ||
     `experience relevant to ${job.roleFamily.toLowerCase()}`;
@@ -103,7 +87,7 @@ export default async function ContactsPage({
       </div>
       <div className="grid two-col">
         <section className="stack">
-          {plan.people.length?<section className="card"><div className="eyebrow">AI-researched public contacts</div><h2>People worth reviewing</h2><div className="stack" style={{marginTop:16}}>{plan.people.map(person=><article className="saved-contact" key={person.publicUrl}><div><strong>{person.name}</strong><span>{person.title}</span><small>{person.why}</small></div><div className="actions"><a className="btn" href={person.publicUrl} target="_blank" rel="noreferrer">Review profile</a><CopyMessage text={person.message}/></div></article>)}</div></section>:null}
+          {plan.people.length?<section className="card"><div className="eyebrow">AI-researched public contacts</div><h2>People to verify</h2><p className="subtle">These are evidence-based suggestions, not confirmed hiring contacts. Check each current title before messaging.</p><div className="stack" style={{marginTop:16}}>{plan.people.map(person=><article className="saved-contact" key={person.publicUrl}><div><strong>{person.name}</strong><span>{person.title}</span><small>{person.why}</small></div><div className="actions"><a className="btn" href={person.publicUrl} target="_blank" rel="noreferrer">Verify profile</a><CopyMessage text={person.message}/></div></article>)}</div></section>:null}
           <ContactCapture jobId={job.id} initialContacts={contacts} />
           <div className="section-head">
             <h2>Who to look for</h2>
