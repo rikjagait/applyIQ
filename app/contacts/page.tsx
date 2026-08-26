@@ -8,13 +8,9 @@ import { listContactsForJob } from "@/lib/repositories/contacts";
 import { getOutreachFallback, getOutreachPlan, outreachSearchTargets } from "@/lib/ai/outreach-generation";
 import { Suspense } from "react";
 import type { Job } from "@/lib/types";
+import { linkedInCurrentCompanySearch } from "@/lib/linkedin-people-search";
 
 async function ResearchedContacts({job}:{job:Job}){const plan=await getOutreachPlan(job);if(!plan.people.length)return <section className="card"><div className="eyebrow">AI contact research</div><p className="subtle">No sufficiently well-supported public contacts were found. Use the focused searches below rather than guessing.</p></section>;return <section className="card"><div className="eyebrow">AI-researched public contacts</div><h2>People to verify</h2><p className="subtle">These are evidence-based suggestions, not confirmed hiring contacts. Check each current title before messaging.</p><div className="stack" style={{marginTop:16}}>{plan.people.map(person=><article className="saved-contact" key={person.publicUrl}><div><strong>{person.name}</strong><span>{person.title}</span><small>{person.why}</small></div><div className="actions"><a className="btn" href={person.publicUrl} target="_blank" rel="noreferrer">Verify profile</a><CopyMessage text={person.message}/></div></article>)}</div></section>}
-
-function linkedInSearch(query: string) {
-  return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(query)}`;
-}
-const googleSearch = linkedInSearch;
 
 export default async function ContactsPage({
   searchParams,
@@ -69,7 +65,7 @@ export default async function ContactsPage({
         }}
       >
         <ShieldCheck size={15} /> ApplyIQ never logs into LinkedIn, scrapes
-        profiles, or sends messages automatically. You review every person and
+        profiles, or sends messages automatically. Searches are scoped to current {job.company} employees; you still verify every person and
         send every message yourself.
       </div>
       <div className="outreach-workflow" aria-label="Outreach workflow">
@@ -106,12 +102,12 @@ export default async function ContactsPage({
                 </div>
                 <a
                   className="btn primary"
-                  href={googleSearch(item.query)}
+                  href={linkedInCurrentCompanySearch(job.company,item.query)}
                   target="_blank"
                   rel="noreferrer"
                 >
                   <Search size={14} />
-                  Search public profiles
+                  Search current {job.company} employees
                 </a>
               </div>
               <div className="tag">Search: {item.query}</div>
