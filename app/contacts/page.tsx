@@ -107,10 +107,10 @@ export default async function ContactsPage({
                   rel="noreferrer"
                 >
                   <Search size={14} />
-                  Search current {job.company} employees
+                  Search LinkedIn people
                 </a>
               </div>
-              <div className="tag">Search: {item.query}</div>
+              <div className="tag">Employer: {job.company} · Search focus: {item.query.replace(job.company,"").trim()}</div>
             </article>
           ))}
         </section>
