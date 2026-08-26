@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { responseText, type ResponsesPayload } from "@/lib/ai/response-text";
 import type { DiscoveredJob } from "@/lib/job-discovery/ats";
 
 const resultSchema = z.object({
@@ -49,8 +50,8 @@ export async function rerankProactiveJobs(jobs: DiscoveredJob[], resumeText?: st
       }),
     });
     if (!response.ok) throw new Error(`OpenAI discovery ranking failed (${response.status})`);
-    const data = await response.json() as { output_text?: string };
-    const parsed = resultSchema.parse(JSON.parse(data.output_text || "{}"));
+    const data = await response.json() as ResponsesPayload;
+    const parsed = resultSchema.parse(JSON.parse(responseText(data) || "{}"));
     const assessments = new Map(parsed.assessments.map(item => [item.externalId, item]));
     return candidates
       .map(job => {

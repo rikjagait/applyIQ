@@ -5,7 +5,11 @@ import { CopyMessage } from "@/components/copy-message";
 import Link from "next/link";
 import { ContactCapture } from "@/components/contact-capture";
 import { listContactsForJob } from "@/lib/repositories/contacts";
-import { getOutreachPlan, outreachSearchTargets } from "@/lib/ai/outreach-generation";
+import { getOutreachFallback, getOutreachPlan, outreachSearchTargets } from "@/lib/ai/outreach-generation";
+import { Suspense } from "react";
+import type { Job } from "@/lib/types";
+
+async function ResearchedContacts({job}:{job:Job}){const plan=await getOutreachPlan(job);if(!plan.people.length)return <section className="card"><div className="eyebrow">AI contact research</div><p className="subtle">No sufficiently well-supported public contacts were found. Use the focused searches below rather than guessing.</p></section>;return <section className="card"><div className="eyebrow">AI-researched public contacts</div><h2>People to verify</h2><p className="subtle">These are evidence-based suggestions, not confirmed hiring contacts. Check each current title before messaging.</p><div className="stack" style={{marginTop:16}}>{plan.people.map(person=><article className="saved-contact" key={person.publicUrl}><div><strong>{person.name}</strong><span>{person.title}</span><small>{person.why}</small></div><div className="actions"><a className="btn" href={person.publicUrl} target="_blank" rel="noreferrer">Verify profile</a><CopyMessage text={person.message}/></div></article>)}</div></section>}
 
 function linkedInSearch(query: string) {
   return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(query)}`;
@@ -40,13 +44,14 @@ export default async function ContactsPage({
         </div>
       </div>
     );
-  const [contacts,plan] = await Promise.all([listContactsForJob(job.id),getOutreachPlan(job)]);
+  const contacts = await listContactsForJob(job.id);
   const searches = outreachSearchTargets(job);
   const evidence =
     job.strengths[0] ||
     `experience relevant to ${job.roleFamily.toLowerCase()}`;
-  const connection = plan.connection || `Hi [Name] — I’m exploring the ${job.title} opportunity at ${job.company}. My background includes ${evidence.charAt(0).toLowerCase()}${evidence.slice(1)}, and I’d value connecting.`;
-  const followup = plan.followup;
+  const fallback=getOutreachFallback(job);
+  const connection = fallback.connection || `Hi [Name] — I’m exploring the ${job.title} opportunity at ${job.company}. My background includes ${evidence.charAt(0).toLowerCase()}${evidence.slice(1)}, and I’d value connecting.`;
+  const followup = fallback.followup;
   return (
     <div className="content">
       <PageHead
@@ -87,7 +92,7 @@ export default async function ContactsPage({
       </div>
       <div className="grid two-col">
         <section className="stack">
-          {plan.people.length?<section className="card"><div className="eyebrow">AI-researched public contacts</div><h2>People to verify</h2><p className="subtle">These are evidence-based suggestions, not confirmed hiring contacts. Check each current title before messaging.</p><div className="stack" style={{marginTop:16}}>{plan.people.map(person=><article className="saved-contact" key={person.publicUrl}><div><strong>{person.name}</strong><span>{person.title}</span><small>{person.why}</small></div><div className="actions"><a className="btn" href={person.publicUrl} target="_blank" rel="noreferrer">Verify profile</a><CopyMessage text={person.message}/></div></article>)}</div></section>:null}
+          <Suspense fallback={<section className="card loading-card"><div className="eyebrow">AI contact research</div><p>Checking current public profiles in the background…</p></section>}><ResearchedContacts job={job}/></Suspense>
           <ContactCapture jobId={job.id} initialContacts={contacts} />
           <div className="section-head">
             <h2>Who to look for</h2>

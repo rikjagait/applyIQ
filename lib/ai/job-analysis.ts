@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { responseText, type ResponsesPayload } from "@/lib/ai/response-text";
 import { experiences } from "@/lib/data";
 import { calculateMatchScore, matchCategory } from "@/lib/scoring";
 
@@ -329,10 +330,11 @@ async function analyzeWithOpenAI(
   });
   if (!response.ok)
     throw new Error(`OpenAI analysis failed (${response.status})`);
-  const data = (await response.json()) as { output_text?: string };
-  if (!data.output_text)
+  const data = (await response.json()) as ResponsesPayload;
+  const output=responseText(data);
+  if (!output)
     throw new Error("OpenAI returned no structured output");
-  return jobAnalysisSchema.parse(JSON.parse(data.output_text));
+  return jobAnalysisSchema.parse(JSON.parse(output));
 }
 
 export async function analyzeJob(
